@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 func encode(fname string, encoder io.WriteCloser) {
@@ -33,10 +34,12 @@ func main() {
 	var fnames []string
 
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [file1 [...fileN]]\n", os.Args[0])
-		fmt.Fprintf(flag.CommandLine.Output(), "Copies input to system clipboard using an OSC52 escape sequence.\n")
-		fmt.Fprintf(flag.CommandLine.Output(), "Multiple files will be concatenated.\n")
-		fmt.Fprintf(flag.CommandLine.Output(), "With no file arguments, will read from stdin\n")
+		template := `
+Usage:
+%s [file1 [...fileN]]
+Copies file contents to system clipboard using the ANSI OSC52 escape sequence.
+With no arguments, will read from stdin.`
+		fmt.Fprintf(flag.CommandLine.Output(), strings.TrimSpace(template), os.Args[0])
 	}
 
 	flag.Parse()
