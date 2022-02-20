@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/base64"
 	"flag"
 	"fmt"
@@ -45,14 +46,20 @@ func main() {
 		fnames = []string{"-"}
 	}
 
+	// Open buffered output, using default max OSC52 length as buffer size
+	out := bufio.NewWriterSize(os.Stdout, 1000000)
+
 	// Start OSC52
-	fmt.Print("\033]52;c;")
-	b64 := base64.NewEncoder(base64.StdEncoding, os.Stdout)
+	fmt.Fprintf(out, "\033]52;c;")
+
+	b64 := base64.NewEncoder(base64.StdEncoding, out)
 	for _, fname := range fnames {
 		encode(fname, b64)
 	}
 	b64.Close()
 
 	// End OSC52
-	fmt.Print("\a")
+	fmt.Fprintf(out, "\a")
+
+	out.Flush()
 }
