@@ -7,7 +7,11 @@ OSC52 is widely supported, see [partial list of supported terminals](https://git
 
 ## Installation
 ```
+# go 1.16 or later:
 go install -v github.com/theimpostor/osc52@latest
+
+# go 1.15 or earlier:
+GO111MODULE=on go get github.com/theimpostor/osc52@latest
 ```
 
 This will install the latest version of osc52 to `$GOPATH/bin`. To find out where `$GOPATH` is, run `go env GOPATH`
