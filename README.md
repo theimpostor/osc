@@ -6,11 +6,15 @@ When this sequence is printed, the terminal will copy the given text into the sy
 OSC52 is widely supported, see [partial list of supported terminals](https://github.com/ojroques/vim-oscyank/blob/main/README.md#vim-oscyank)
 
 ## Installation
-```
-# go 1.16 or later:
-go install -v github.com/theimpostor/osc52@latest
 
-# go 1.15 or earlier:
+#### go 1.16 or later:
+
+```
+go install -v github.com/theimpostor/osc52@latest
+```
+
+#### go 1.15 or earlier:
+```
 GO111MODULE=on go get github.com/theimpostor/osc52@latest
 ```
 
