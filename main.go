@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"syscall"
 	// "golang.org/x/sys/unix"
 )
 
@@ -32,6 +31,20 @@ func encode(fname string, encoder io.WriteCloser) {
 	}
 }
 
+func opentty() (tty tcell.Tty, err error) {
+	tty, err = tcell.NewDevTty()
+	if err == nil {
+		err = tty.Start()
+	}
+	return
+}
+
+func closetty(tty tcell.Tty) {
+	tty.Drain()
+	tty.Stop()
+	tty.Close()
+}
+
 func main() {
 	var fnames []string
 
@@ -47,6 +60,14 @@ With no arguments, will read from stdin.
 	pasteFlag := flag.Bool("paste", false, "paste operation")
 
 	flag.Parse()
+
+	tty, err := opentty()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "ERROR: opentty:", err)
+		return
+	}
+	defer closetty(tty)
+
 	if !*pasteFlag {
 		// copy
 		if len(flag.Args()) > 0 {
@@ -56,7 +77,8 @@ With no arguments, will read from stdin.
 		}
 
 		// Open buffered output, using default max OSC52 length as buffer size
-		out := bufio.NewWriterSize(os.Stdout, 1000000)
+		// TODO limit size
+		out := bufio.NewWriterSize(tty, 1000000)
 
 		// Start OSC52
 		fmt.Fprintf(out, "\033]52;c;")
@@ -75,77 +97,32 @@ With no arguments, will read from stdin.
 		// paste
 
 		// Start OSC52
-		fmt.Printf("\033]52;c;?\a")
+		fmt.Fprintf(tty, "\033]52;c;?\a")
 
-		readFunc := func() (data []byte) {
-			var err error
-			tty, err := tcell.NewDevTty()
-			if err != nil {
-				fmt.Fprintln(os.Stderr, "ERROR: tcell.NewDevTty:", err)
-				return
-			}
-			defer func() {
-				if err = tty.Drain(); err != nil {
-					fmt.Fprintln(os.Stderr, "Drain error:", err)
-				}
-				if err = tty.Stop(); err != nil {
-					fmt.Fprintln(os.Stderr, "Drain error:", err)
-				}
-				if err = tty.Close(); err != nil {
-					fmt.Fprintln(os.Stderr, "Drain error:", err)
-				}
-			}()
-			if err = tty.Start(); err != nil {
-				fmt.Fprintln(os.Stderr, "Start error:", err)
-			}
+		ttyReader := bufio.NewReader(tty)
 
-			ttyReader := bufio.NewReader(tty)
-			data, err = ttyReader.ReadBytes('\a')
-			if err != nil && err != syscall.EAGAIN {
-				fmt.Fprintln(os.Stderr, "Read error:", err)
-				return
-			}
+		buf, err := ttyReader.ReadBytes('\a')
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Read error:", err)
 			return
 		}
-		buf := readFunc()
-		// fmt.Fprintln(os.Stderr, "Read", len(buf), "bytes")
-		fmt.Fprintf(os.Stderr, "Read %d bytes, %x\n", len(buf), buf)
-		// fmt.Fprintln(os.Stderr, "Read:", string(buf[:]))
 
-		// tty, err := os.OpenFile("/dev/tty", os.O_RDONLY, 0)
-		// if err != nil {
-		// 	fmt.Fprintln(os.Stderr, "Error opening /dev/tty:", err)
-		// 	return
-		// }
-		// defer tty.Close()
+		// fmt.Fprintf(os.Stderr, "Read %d bytes, %x\n", len(buf), buf)
+		// fmt.Fprintf(os.Stderr, "buf[:7]: %q\n", buf[:7])
+		// fmt.Fprintf(os.Stderr, "buf[len(buf)-1]: %q\n", buf[len(buf)-1])
+		// fmt.Fprintf(os.Stderr, "%x\n", buf)
+		buf = buf[7 : len(buf)-1]
+		// fmt.Fprintf(os.Stderr, "%x\n", buf)
 
-		// // set nonblocking
-		// err = unix.SetNonblock(int(tty.Fd()), true)
-		// if err != nil {
-		// 	fmt.Fprintln(os.Stderr, "Error setting nonblock:", err)
-		// 	return
-		// }
-
-		// // Create a byte slice to read into
-		// buf := make([]byte, 1)
-
-		// for {
-		// 	// Try to read
-		// 	n, err := tty.Read(buf)
-		// 	if err != nil && err != syscall.EAGAIN {
-		// 		fmt.Fprintln(os.Stderr, "Read error:", err)
-		// 		return
-		// 	}
-
-		// 	// If we got some data, print it
-		// 	if n > 0 {
-		// 		fmt.Fprintln(os.Stderr, "Read:", string(buf[:n]))
-
-		// 		if buf[0] == byte('\a') {
-		// 			fmt.Fprintln(os.Stderr, "END")
-		// 			break
-		// 		}
-		// 	}
-		// }
+		dst := make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
+		n, err := base64.StdEncoding.Decode(dst, []byte(buf))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "decode error:", err)
+			return
+		}
+		dst = dst[:n]
+		if _, err := os.Stdout.Write(dst); err != nil {
+			fmt.Fprintln(os.Stderr, "Error writing to stdout:", err)
+		}
 	}
 }
