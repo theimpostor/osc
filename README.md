@@ -3,23 +3,6 @@ A command line tool to access the system clipboard from anywhere on the command 
 
 System clipboard access includes writing (i.e. copy) and reading (i.e. paste), even while logged into a remote machine via ssh.
 
-OSC52 is widely supported, see [partial list of supported terminals](https://github.com/ojroques/vim-oscyank/blob/main/README.md#vim-oscyank). Note that clipboard read operation is less widely supported than write.
-
-## Installation
-
-#### go 1.16 or later:
-
-```
-go install -v github.com/theimpostor/osc52@latest
-```
-
-#### go 1.15 or earlier:
-```
-GO111MODULE=on go get github.com/theimpostor/osc52@latest
-```
-
-This will install the latest version of osc52 to `$GOPATH/bin`. To find out where `$GOPATH` is, run `go env GOPATH`
-
 ## Usage
 ```
 Reads or writes the system clipboard using the ANSI OSC52 escape sequence.
@@ -47,6 +30,29 @@ Options:
   -verbose
     	verbose logging
 ```
+
+## Compatibility
+
+OSC52 is overall [widely supported](https://github.com/ojroques/vim-oscyank/blob/main/README.md#vim-oscyank), but clipboard read operation is less widely supported than write.
+
+#### Terminal Multiplexer support
+
+`tmux` and `screen` have not been tested yet and probably do not work. Support is planned in the future.
+
+## Installation
+
+#### go 1.16 or later:
+
+```
+go install -v github.com/theimpostor/osc52@latest
+```
+
+#### go 1.15 or earlier:
+```
+GO111MODULE=on go get github.com/theimpostor/osc52@latest
+```
+
+This will install the latest version of osc52 to `$GOPATH/bin`. To find out where `$GOPATH` is, run `go env GOPATH`
 
 ## Credits
 Credit and thanks to the the [vim-ocsyank](https://github.com/ojroques/vim-oscyank) plugin
