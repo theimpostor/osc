@@ -1,9 +1,9 @@
 # osc52
-A command line tool to copy text to the system clipboard from anywhere using the [ANSI OSC52](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands) sequence.
+A command line tool to access the system clipboard from anywhere on the command line using the [ANSI OSC52](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands) sequence.
 
-When this sequence is printed, the terminal will copy the given text into the system clipboard. This is totally location independent, users can copy from anywhere including from remote SSH sessions.
+System clipboard access includes writing (i.e. copy) and reading (i.e. paste), even while logged into a remote machine via ssh.
 
-OSC52 is widely supported, see [partial list of supported terminals](https://github.com/ojroques/vim-oscyank/blob/main/README.md#vim-oscyank)
+OSC52 is widely supported, see [partial list of supported terminals](https://github.com/ojroques/vim-oscyank/blob/main/README.md#vim-oscyank). Note that clipboard read operation is less widely supported than write.
 
 ## Installation
 
@@ -22,9 +22,30 @@ This will install the latest version of osc52 to `$GOPATH/bin`. To find out wher
 
 ## Usage
 ```
-Usage: ./osc52 [file1 [...fileN]]
-Copies file contents to system clipboard using the OSC52 escape sequence.
+Reads or writes the system clipboard using the ANSI OSC52 escape sequence.
+
+Usage:
+
+COPY mode (default):
+
+    osc52 [file1 [...fileN]]
+
 With no arguments, will read from stdin.
+
+PASTE mode:
+
+    osc52 --paste
+
+Outputs clipboard contents to stdout.
+
+Options:
+  -logFile string
+    	redirect logs to file
+  -paste
+    	paste operation
+  -v	verbose logging
+  -verbose
+    	verbose logging
 ```
 
 ## Credits
