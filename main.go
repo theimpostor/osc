@@ -125,7 +125,7 @@ Options:
 
 		// Start OSC52
 		slog.Debug("Beginning osc52 copy operation")
-		fmt.Fprintf(out, "\033]52;c;")
+		fmt.Fprintf(out, "\x1b]52;c;")
 
 		b64 := base64.NewEncoder(base64.StdEncoding, out)
 		for _, fname := range fnames {
@@ -142,7 +142,6 @@ Options:
 		// paste
 
 		data := func() []byte {
-
 			tty, err := opentty()
 			if err != nil {
 				slog.Error("ERROR: opentty:", err)
@@ -152,7 +151,7 @@ Options:
 
 			// Start OSC52
 			slog.Debug("Beginning osc52 paste operation")
-			fmt.Fprintf(tty, "\033]52;c;?\a")
+			fmt.Fprintf(tty, "\x1b]52;c;?\a")
 
 			ttyReader := bufio.NewReader(tty)
 			buf := make([]byte, 0, 1024)
@@ -162,39 +161,31 @@ Options:
 					return nil
 				} else {
 					slog.Debug(fmt.Sprintf("Read: %x '%s'", b, string(b)))
+					// Terminator might be BEL (\a) or ESC-backslash (\x1b\\)
 					if b == '\a' {
 						break
 					}
 					buf = append(buf, b)
-					if len(buf) > 2 && buf[len(buf)-2] == '\033' && buf[len(buf)-1] == '\\' {
+					// Skip initial 7 bytes of response
+					if len(buf) > 9 && buf[len(buf)-2] == '\x1b' && buf[len(buf)-1] == '\\' {
 						buf = buf[:len(buf)-2]
 						break
 					}
 				}
 			}
 
-			// buf, err := ttyReader.ReadBytes('\a')
-			// if err != nil {
-			// 	slog.Error("Read error:", err)
-			// 	return nil
-			// }
-
-			// slog.Debug("Read %d bytes, %x\n", len(buf), buf)
-			// fmt.Fprintf(os.Stderr, "buf[:7]: %q\n", buf[:7])
-			// fmt.Fprintf(os.Stderr, "buf[len(buf)-1]: %q\n", buf[len(buf)-1])
-			// fmt.Fprintf(os.Stderr, "%x\n", buf)
+			slog.Debug(fmt.Sprintf("buf[:7]: %q", buf[:7]))
 			buf = buf[7:]
-			// fmt.Fprintf(os.Stderr, "%x\n", buf)
 
-			dst := make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
-			n, err := base64.StdEncoding.Decode(dst, []byte(buf))
+			decodedBuf := make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
+			n, err := base64.StdEncoding.Decode(decodedBuf, []byte(buf))
 			if err != nil {
 				slog.Error("decode error:", err)
 				return nil
 			}
-			dst = dst[:n]
+			decodedBuf = decodedBuf[:n]
 
-			return dst
+			return decodedBuf
 		}()
 
 		if data != nil {
