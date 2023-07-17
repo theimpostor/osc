@@ -35,6 +35,17 @@ Options:
 
 OSC52 is overall [widely supported](https://github.com/ojroques/vim-oscyank/blob/main/README.md#vim-oscyank), but clipboard read operation is less widely supported than write.
 
+Terminal | Terminal OS | Shell OS | Copy | Paste | Notes
+---      | ---         | ---      | ---  | ---   | ---
+[alacritty](https://github.com/alacritty/alacritty) 0.12.2 | macOS | linux | &check; | &check; |
+[alacritty](https://github.com/alacritty/alacritty) 0.12.2 | macOS | macOS | &check; | &check; |
+[alacritty](https://github.com/alacritty/alacritty) 0.12.0 | Windows | linux | &check; | &cross; |
+[kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | linux | &check; | &check; | Prompts for access
+[kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | macOS | &check; | &check; | Prompts for access
+[iterm2](https://iterm2.com/) | macOS | macOS | &check; | &check; | Paste requires version 3.5.0 (currently beta). Prompts for access.
+[iterm2](https://iterm2.com/) | macOS | macOS | &check; | &check; | Paste requires version 3.5.0 (currently beta). Prompts for access.
+[hterm](https://chrome.google.com/webstore/detail/secure-shell/iodihamcpbpeioajjeobimgagajmlibd) | ChromeOS | linux | &check; | &cross; |
+
 #### Terminal Multiplexer support
 
 `tmux` and `screen` have not been tested yet and probably do not work. Support is planned in the future.
