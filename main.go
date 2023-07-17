@@ -10,7 +10,6 @@ import (
 	"io"
 	"log"
 	"os"
-	// "golang.org/x/sys/unix"
 )
 
 func encode(fname string, encoder io.WriteCloser) {
