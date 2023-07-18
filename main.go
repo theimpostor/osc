@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 )
 
 func encode(fname string, encoder io.WriteCloser) {
@@ -45,9 +46,10 @@ func closetty(tty tcell.Tty) {
 	tty.Close()
 }
 
-func main() {
+func _main() int {
 	var fnames []string
 	var err error
+	var exitCode int
 
 	flag.Usage = func() {
 		template := `Reads or writes the system clipboard using the ANSI OSC52 escape sequence.
@@ -104,7 +106,7 @@ Options:
 	slog.Debug("logging started")
 
 	if ti, err := tcell.LookupTerminfo(os.Getenv("TERM")); err != nil {
-		slog.Error("ERROR: failed to lookup terminfo:", err)
+		slog.Error("ERROR: failed to lookup terminfo: %s", err)
 	} else {
 		slog.Debug(fmt.Sprintf("term is: %s, aliases: %v", ti.Name, ti.Aliases))
 	}
@@ -121,7 +123,8 @@ Options:
 		func() {
 			tty, err := opentty()
 			if err != nil {
-				slog.Error("ERROR: opentty:", err)
+				slog.Error("ERROR: opentty: %v", err)
+				exitCode = 1
 				return
 			}
 			defer closetty(tty)
@@ -152,7 +155,8 @@ Options:
 		data := func() []byte {
 			tty, err := opentty()
 			if err != nil {
-				slog.Error("ERROR: opentty:", err)
+				slog.Error("ERROR: opentty: %v", err)
+				exitCode = 1
 				return nil
 			}
 			defer closetty(tty)
@@ -162,9 +166,30 @@ Options:
 
 			ttyReader := bufio.NewReader(tty)
 			buf := make([]byte, 0, 1024)
+
+			// time out intial read in 100 milliseconds
+			readChan := make(chan byte, 1)
+			defer close(readChan)
+			go func() {
+				if b, e := ttyReader.ReadByte(); e != nil {
+					slog.Debug("Initial ReadByte error:", e)
+				} else {
+					readChan <- b
+				}
+			}()
+			select {
+			case b := <-readChan:
+				buf = append(buf, b)
+			case <-time.After(100 * time.Millisecond):
+				slog.Debug("tty read timeout")
+				exitCode = 1
+				return nil
+			}
+
 			for {
-				if b, err := ttyReader.ReadByte(); err != nil {
-					slog.Error("ReadByte error:", err)
+				if b, e := ttyReader.ReadByte(); e != nil {
+					slog.Error("ReadByte error: %v", e)
+					exitCode = 1
 					return nil
 				} else {
 					slog.Debug(fmt.Sprintf("Read: %x '%s'", b, string(b)))
@@ -181,13 +206,14 @@ Options:
 				}
 			}
 
-			slog.Debug(fmt.Sprintf("buf[:7]: %q", buf[:7]))
+			slog.Debug("buf[:7]: %q", buf[:7])
 			buf = buf[7:]
 
 			decodedBuf := make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
 			n, err := base64.StdEncoding.Decode(decodedBuf, []byte(buf))
 			if err != nil {
-				slog.Error("decode error:", err)
+				slog.Error("decode error: %v", err)
+				exitCode = 1
 				return nil
 			}
 			decodedBuf = decodedBuf[:n]
@@ -197,9 +223,16 @@ Options:
 
 		if data != nil {
 			if _, err := os.Stdout.Write(data); err != nil {
-				slog.Error("Error writing to stdout:", err)
+				slog.Error("Error writing to stdout: %v", err)
+				exitCode = 1
 			}
 		}
 		slog.Debug("Ended osc52")
 	}
+
+	return exitCode
+}
+
+func main() {
+	os.Exit(_main())
 }
