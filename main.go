@@ -103,6 +103,12 @@ Options:
 	slog.SetDefault(logger)
 	slog.Debug("logging started")
 
+	if ti, err := tcell.LookupTerminfo(os.Getenv("TERM")); err != nil {
+		slog.Error("ERROR: failed to lookup terminfo:", err)
+	} else {
+		slog.Debug(fmt.Sprintf("term is: %s, aliases: %v", ti.Name, ti.Aliases))
+	}
+
 	if !pasteFlag {
 		// copy
 		if len(flag.Args()) > 0 {
@@ -111,35 +117,38 @@ Options:
 			fnames = []string{"-"}
 		}
 
-		tty, err := opentty()
-		if err != nil {
-			slog.Error("ERROR: opentty:", err)
-			return
-		}
-		defer closetty(tty)
-
-		// Open buffered output, using default max OSC52 length as buffer size
-		// TODO limit size
-		out := bufio.NewWriterSize(tty, 1000000)
-
-		// Start OSC52
 		slog.Debug("Beginning osc52 copy operation")
-		fmt.Fprintf(out, "\x1b]52;c;")
+		func() {
+			tty, err := opentty()
+			if err != nil {
+				slog.Error("ERROR: opentty:", err)
+				return
+			}
+			defer closetty(tty)
 
-		b64 := base64.NewEncoder(base64.StdEncoding, out)
-		for _, fname := range fnames {
-			encode(fname, b64)
-		}
-		b64.Close()
+			// Open buffered output, using default max OSC52 length as buffer size
+			// TODO limit size
+			out := bufio.NewWriterSize(tty, 1000000)
 
-		// End OSC52
-		fmt.Fprintf(out, "\a")
+			// Start OSC52
+			fmt.Fprintf(out, "\x1b]52;c;")
 
-		out.Flush()
+			b64 := base64.NewEncoder(base64.StdEncoding, out)
+			for _, fname := range fnames {
+				encode(fname, b64)
+			}
+			b64.Close()
+
+			// End OSC52
+			fmt.Fprintf(out, "\a")
+
+			out.Flush()
+		}()
 		slog.Debug("Ended osc52")
 	} else {
 		// paste
 
+		slog.Debug("Beginning osc52 paste operation")
 		data := func() []byte {
 			tty, err := opentty()
 			if err != nil {
@@ -149,7 +158,6 @@ Options:
 			defer closetty(tty)
 
 			// Start OSC52
-			slog.Debug("Beginning osc52 paste operation")
 			fmt.Fprintf(tty, "\x1b]52;c;?\a")
 
 			ttyReader := bufio.NewReader(tty)
