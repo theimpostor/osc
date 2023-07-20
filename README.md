@@ -74,4 +74,6 @@ This will install the latest version of osc52 to `$GOPATH/bin`. To find out wher
 - [ ] log format
 
 ## Credits
-Credit and thanks to the the [vim-ocsyank](https://github.com/ojroques/vim-oscyank) plugin
+-  [ojroques/vim-ocsyank](https://github.com/ojroques/vim-oscyank) - inspiration and introduction to OSC52
+-  [rumpelsepp/oscclip](https://github.com/rumpelsepp/oscclip) - working python implementation
+-  [gdamore/tcell](https://github.com/gdamore/tcell) - terminal handling
