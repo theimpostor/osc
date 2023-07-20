@@ -67,11 +67,11 @@ This will install the latest version of osc52 to `$GOPATH/bin`. To find out wher
 
 ## TODO
 
-[] [copy] check is stdin is readable
-[] screen support
-[] tmux support
-[] subcommands
-[] log format
+- [ ] [copy] check is stdin is readable
+- [ ] screen support
+- [ ] tmux support
+- [ ] subcommands
+- [ ] log format
 
 ## Credits
 Credit and thanks to the the [vim-ocsyank](https://github.com/ojroques/vim-oscyank) plugin
