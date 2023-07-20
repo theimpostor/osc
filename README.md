@@ -65,5 +65,13 @@ GO111MODULE=on go get github.com/theimpostor/osc52@latest
 
 This will install the latest version of osc52 to `$GOPATH/bin`. To find out where `$GOPATH` is, run `go env GOPATH`
 
+## TODO
+
+[] [copy] check is stdin is readable
+[] screen support
+[] tmux support
+[] subcommands
+[] log format
+
 ## Credits
 Credit and thanks to the the [vim-ocsyank](https://github.com/ojroques/vim-oscyank) plugin
