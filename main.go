@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"github.com/jba/slog/handlers/loghandler"
 	"golang.org/x/exp/slog"
 	"io"
 	"log"
@@ -99,16 +100,17 @@ Options:
 		logLevel.Set(slog.LevelDebug)
 	}
 
-	logger := slog.New(slog.NewTextHandler(logOutput, &slog.HandlerOptions{
+	logger := slog.New(loghandler.New(logOutput, &slog.HandlerOptions{
 		Level: logLevel,
 	}))
+
 	slog.SetDefault(logger)
 	slog.Debug("logging started")
 
 	if ti, err := tcell.LookupTerminfo(os.Getenv("TERM")); err != nil {
-		slog.Error("ERROR: failed to lookup terminfo: %s", err)
+		slog.Error(fmt.Sprintf("Failed to lookup terminfo: %v", err))
 	} else {
-		slog.Debug(fmt.Sprintf("term is: %s, aliases: %v", ti.Name, ti.Aliases))
+		slog.Debug(fmt.Sprintf("term name: %s, aliases: %q", ti.Name, ti.Aliases))
 	}
 
 	if !pasteFlag {
@@ -123,7 +125,7 @@ Options:
 		func() {
 			tty, err := opentty()
 			if err != nil {
-				slog.Error("ERROR: opentty: %v", err)
+				slog.Error(fmt.Sprintf("opentty: %v", err))
 				exitCode = 1
 				return
 			}
@@ -155,7 +157,7 @@ Options:
 		data := func() []byte {
 			tty, err := opentty()
 			if err != nil {
-				slog.Error("ERROR: opentty: %v", err)
+				slog.Error(fmt.Sprintf("opentty: %v", err))
 				exitCode = 1
 				return nil
 			}
@@ -172,7 +174,7 @@ Options:
 			defer close(readChan)
 			go func() {
 				if b, e := ttyReader.ReadByte(); e != nil {
-					slog.Debug("Initial ReadByte error:", e)
+					slog.Debug(fmt.Sprintf("Initial ReadByte error: %v", e))
 				} else {
 					readChan <- b
 				}
@@ -188,7 +190,7 @@ Options:
 
 			for {
 				if b, e := ttyReader.ReadByte(); e != nil {
-					slog.Error("ReadByte error: %v", e)
+					slog.Error(fmt.Sprintf("ReadByte: %v", e))
 					exitCode = 1
 					return nil
 				} else {
@@ -206,13 +208,13 @@ Options:
 				}
 			}
 
-			slog.Debug("buf[:7]: %q", buf[:7])
+			slog.Debug(fmt.Sprintf("buf[:7]: %q", buf[:7]))
 			buf = buf[7:]
 
 			decodedBuf := make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
 			n, err := base64.StdEncoding.Decode(decodedBuf, []byte(buf))
 			if err != nil {
-				slog.Error("decode error: %v", err)
+				slog.Error(fmt.Sprintf("decode error: %v", err))
 				exitCode = 1
 				return nil
 			}
@@ -223,7 +225,7 @@ Options:
 
 		if data != nil {
 			if _, err := os.Stdout.Write(data); err != nil {
-				slog.Error("Error writing to stdout: %v", err)
+				slog.Error(fmt.Sprintf("Error writing to stdout: %v", err))
 				exitCode = 1
 			}
 		}
