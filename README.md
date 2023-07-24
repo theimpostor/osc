@@ -71,7 +71,6 @@ This will install the latest version of osc52 to `$GOPATH/bin`. To find out wher
 - [ ] screen support
 - [ ] tmux support
 - [ ] subcommands
-- [ ] log format
 
 ## Credits
 -  [ojroques/vim-ocsyank](https://github.com/ojroques/vim-oscyank) - inspiration and introduction to OSC52
