@@ -48,7 +48,14 @@ Terminal | Terminal OS | Shell OS | Copy | Paste | Notes
 
 #### Terminal Multiplexer support
 
-`tmux` and `screen` have not been tested yet and probably do not work. Support is planned in the future.
+Using [alacritty](https://github.com/alacritty/alacritty) as the terminal,
+default configuration options for multiplexer:
+
+Terminal Multiplexer | Copy | Paste | Notes
+---                  | ---  | ---   | ---
+[screen](https://www.gnu.org/software/screen/) 4.09.00 | &check; | &check; |
+[zellij](https://zellij.dev/) 0.37.2 | &check; | [&cross;](https://github.com/zellij-org/zellij/issues/2647) |
+[tmux](https://github.com/tmux/tmux) 3.2a | &cross; | &cross; | May require configuration
 
 ## Installation
 
@@ -68,7 +75,6 @@ This will install the latest version of osc52 to `$GOPATH/bin`. To find out wher
 ## TODO
 
 - [ ] [copy] check is stdin is readable
-- [ ] screen support
 - [ ] tmux support
 - [ ] subcommands
 

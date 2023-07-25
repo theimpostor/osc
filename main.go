@@ -11,7 +11,14 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 	"time"
+)
+
+var (
+	oscOpen  string = "\x1b]52;c;"
+	oscClose string = "\a"
+	isScreen bool
 )
 
 func encode(fname string, encoder io.WriteCloser) {
@@ -111,6 +118,15 @@ Options:
 		slog.Error(fmt.Sprintf("Failed to lookup terminfo: %v", err))
 	} else {
 		slog.Debug(fmt.Sprintf("term name: %s, aliases: %q", ti.Name, ti.Aliases))
+		if strings.HasPrefix(ti.Name, "screen") {
+			isScreen = true
+		}
+	}
+
+	if isScreen {
+		slog.Debug("Setting screen dcs passthrough")
+		oscOpen = "\x1bP" + oscOpen
+		oscClose = oscClose + "\x1b\\"
 	}
 
 	if !pasteFlag {
@@ -136,7 +152,7 @@ Options:
 			out := bufio.NewWriterSize(tty, 1000000)
 
 			// Start OSC52
-			fmt.Fprintf(out, "\x1b]52;c;")
+			fmt.Fprint(out, oscOpen)
 
 			b64 := base64.NewEncoder(base64.StdEncoding, out)
 			for _, fname := range fnames {
@@ -145,7 +161,7 @@ Options:
 			b64.Close()
 
 			// End OSC52
-			fmt.Fprintf(out, "\a")
+			fmt.Fprint(out, oscClose)
 
 			out.Flush()
 		}()
@@ -164,7 +180,7 @@ Options:
 			defer closetty(tty)
 
 			// Start OSC52
-			fmt.Fprintf(tty, "\x1b]52;c;?\a")
+			fmt.Fprint(tty, oscOpen+"?"+oscClose)
 
 			ttyReader := bufio.NewReader(tty)
 			buf := make([]byte, 0, 1024)
