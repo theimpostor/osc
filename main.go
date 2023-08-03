@@ -57,7 +57,7 @@ func closetty(tty tcell.Tty) {
 	tty.Close()
 }
 
-func initLogging() {
+func initLogging() (logfile *os.File) {
 	var err error
 	logLevel := &slog.LevelVar{} // INFO
 	logOutput := os.Stdout
@@ -66,7 +66,7 @@ func initLogging() {
 		if logOutput, err = os.OpenFile(logfileFlag, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0644); err != nil {
 			log.Fatalf("Failed to open file %v: %v", logfileFlag, err)
 		} else {
-			defer logOutput.Close()
+			logfile = logOutput
 		}
 	}
 
@@ -80,6 +80,8 @@ func initLogging() {
 
 	slog.SetDefault(logger)
 	slog.Debug("logging started")
+
+	return
 }
 
 func identifyTerm() {
@@ -215,6 +217,12 @@ func paste() error {
 	return nil
 }
 
+func closeSilently(f *os.File) {
+	if f != nil {
+		f.Close()
+	}
+}
+
 var copyCmd = &cobra.Command{
 	Use:   "copy",
 	Short: "Copies input to the system clipboard",
@@ -224,7 +232,8 @@ osc copy [file1 [...fileN]]
 
 With no arguments, will read from stdin.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		initLogging()
+		logfile := initLogging()
+		defer closeSilently(logfile)
 		identifyTerm()
 		return copy(args)
 	},
@@ -237,7 +246,8 @@ var pasteCmd = &cobra.Command{
 
 osc paste`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		initLogging()
+		logfile := initLogging()
+		defer closeSilently(logfile)
 		identifyTerm()
 		return paste()
 	},
