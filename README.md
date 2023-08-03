@@ -1,4 +1,4 @@
-# osc52
+# osc
 A command line tool to access the system clipboard from anywhere on the command line using the [ANSI OSC52](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands) sequence.
 
 System clipboard access includes writing (i.e. copy) and reading (i.e. paste), even while logged into a remote machine via ssh.
@@ -62,21 +62,20 @@ Terminal Multiplexer | Copy | Paste | Notes
 #### go 1.16 or later:
 
 ```
-go install -v github.com/theimpostor/osc52@latest
+go install -v github.com/theimpostor/osc@latest
 ```
 
 #### go 1.15 or earlier:
 ```
-GO111MODULE=on go get github.com/theimpostor/osc52@latest
+GO111MODULE=on go get github.com/theimpostor/osc@latest
 ```
 
-This will install the latest version of osc52 to `$GOPATH/bin`. To find out where `$GOPATH` is, run `go env GOPATH`
+This will install the latest version of osc to `$GOPATH/bin`. To find out where `$GOPATH` is, run `go env GOPATH`
 
 ## TODO
 
 - [ ] [copy] check is stdin is readable
 - [ ] tmux support
-- [ ] subcommands
 
 ## Credits
 -  [ojroques/vim-ocsyank](https://github.com/ojroques/vim-oscyank) - inspiration and introduction to OSC52
