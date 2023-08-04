@@ -3,32 +3,39 @@ A command line tool to access the system clipboard from anywhere on the command 
 
 System clipboard access includes writing (i.e. copy) and reading (i.e. paste), even while logged into a remote machine via ssh.
 
+## Examples
+
+```
+❯ echo asdf | osc copy
+
+# String 'asdf' copied to clipboard
+
+❯ osc paste
+asdf
+```
+
 ## Usage
+
 ```
 Reads or writes the system clipboard using the ANSI OSC52 escape sequence.
 
 Usage:
+  osc [command]
 
-COPY mode (default):
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  copy        Copies input to the system clipboard
+  help        Help about any command
+  paste       Outputs system clipboard contents to stdout
+  version     Outputs version information
 
-    osc52 [file1 [...fileN]]
+Flags:
+  -h, --help         help for osc
+  -l, --log string   write logs to file
+  -v, --verbose      verbose logging
 
-With no arguments, will read from stdin.
+Use "osc [command] --help" for more information about a command.
 
-PASTE mode:
-
-    osc52 --paste
-
-Outputs clipboard contents to stdout.
-
-Options:
-  -logFile string
-    	redirect logs to file
-  -paste
-    	paste operation
-  -v	verbose logging
-  -verbose
-    	verbose logging
 ```
 
 ## Compatibility
@@ -59,15 +66,8 @@ Terminal Multiplexer | Copy | Paste | Notes
 
 ## Installation
 
-#### go 1.16 or later:
-
 ```
 go install -v github.com/theimpostor/osc@latest
-```
-
-#### go 1.15 or earlier:
-```
-GO111MODULE=on go get github.com/theimpostor/osc@latest
 ```
 
 This will install the latest version of osc to `$GOPATH/bin`. To find out where `$GOPATH` is, run `go env GOPATH`

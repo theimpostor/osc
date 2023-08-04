@@ -246,6 +246,7 @@ var pasteCmd = &cobra.Command{
 	Long: `Outputs system clipboard contents to stdout. Usage:
 
 osc paste`,
+	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		logfile := initLogging()
 		defer closeSilently(logfile)
@@ -258,6 +259,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Outputs version information",
 	Long:  `Outputs version information`,
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		if info, ok := debug.ReadBuildInfo(); !ok {
 			fmt.Println(`Unable to obtain build info.`)
