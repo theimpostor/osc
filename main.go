@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"runtime/debug"
 )
 
 var (
@@ -253,6 +254,19 @@ osc paste`,
 	},
 }
 
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Outputs version information",
+	Long:  `Outputs version information`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if info, ok := debug.ReadBuildInfo(); !ok {
+			fmt.Println(`Unable to obtain build info.`)
+		} else {
+			fmt.Println(info.Main.Version)
+		}
+	},
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "osc",
 	Short: "Reads or writes the system clipboard using the ANSI OSC52 escape sequence",
@@ -265,6 +279,7 @@ func init() {
 
 	rootCmd.AddCommand(copyCmd)
 	rootCmd.AddCommand(pasteCmd)
+	rootCmd.AddCommand(versionCmd)
 }
 
 func main() {
