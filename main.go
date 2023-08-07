@@ -106,6 +106,14 @@ func copy(fnames []string) error {
 	// copy
 	if len(fnames) == 0 {
 		fnames = []string{"-"}
+	} else {
+		for _, fname := range fnames {
+			if f, err := os.Open(fname); err != nil {
+				return err
+			} else {
+				f.Close()
+			}
+		}
 	}
 
 	slog.Debug("Beginning osc52 copy operation")
