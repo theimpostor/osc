@@ -164,7 +164,7 @@ func paste() error {
 		ttyReader := bufio.NewReader(tty)
 		buf := make([]byte, 0, 1024)
 
-		// time out intial read in 100 milliseconds
+		// time out intial read
 		readChan := make(chan byte, 1)
 		defer close(readChan)
 		go func() {
@@ -177,7 +177,7 @@ func paste() error {
 		select {
 		case b := <-readChan:
 			buf = append(buf, b)
-		case <-time.After(100 * time.Millisecond):
+		case <-time.After(1 * time.Second):
 			slog.Debug("tty read timeout")
 			return nil, fmt.Errorf("tty read timeout")
 		}
