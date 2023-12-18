@@ -79,6 +79,27 @@ This will install the latest version of osc to `$GOPATH/bin`. To find out where 
 - [ ] [copy] check is stdin is readable
 - [ ] tmux support
 
+## for neovim
+
+- set init.lua
+
+```lua
+vim.cmd([[
+let g:clipboard = {
+  \   'name': 'osc-copy',
+  \   'copy': {
+  \      '+': 'osc copy',
+  \      '*': 'osc copy',
+  \    },
+  \   'paste': {
+  \      '+': 'osc paste',
+  \      '*': 'osc paste',
+  \   },
+  \   'cache_enabled': 0,
+  \ }
+]])
+```
+
 ## Credits
 -  [ojroques/vim-ocsyank](https://github.com/ojroques/vim-oscyank) - inspiration and introduction to OSC52
 -  [rumpelsepp/oscclip](https://github.com/rumpelsepp/oscclip) - working python implementation
