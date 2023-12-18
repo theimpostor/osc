@@ -4,17 +4,19 @@ import (
 	"bufio"
 	"encoding/base64"
 	"fmt"
-	"github.com/gdamore/tcell/v2"
-	"github.com/jba/slog/handlers/loghandler"
-	"golang.org/x/exp/slog"
 	"io"
 	"log"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
+	"github.com/gdamore/tcell/v2"
+	"github.com/jba/slog/handlers/loghandler"
+	"golang.org/x/exp/slog"
+
 	"runtime/debug"
+
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -23,6 +25,7 @@ var (
 	isScreen    bool
 	verboseFlag bool
 	logfileFlag string
+	deviceFlag  string
 )
 
 func encode(fname string, encoder io.WriteCloser) {
@@ -45,7 +48,7 @@ func encode(fname string, encoder io.WriteCloser) {
 }
 
 func opentty() (tty tcell.Tty, err error) {
-	tty, err = tcell.NewDevTty()
+	tty, err = tcell.NewDevTtyFromDev(deviceFlag)
 	if err == nil {
 		err = tty.Start()
 	}
@@ -286,6 +289,11 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose logging")
 	rootCmd.PersistentFlags().StringVarP(&logfileFlag, "log", "l", "", "write logs to file")
+	rootCmd.PersistentFlags().StringVarP(&deviceFlag, "device", "d", os.Getenv("SSH_TTY"), "device")
+
+	if deviceFlag == "" {
+		deviceFlag = os.Getenv("/dev/tty")
+	}
 
 	rootCmd.AddCommand(copyCmd)
 	rootCmd.AddCommand(pasteCmd)
