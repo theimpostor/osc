@@ -289,7 +289,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose logging")
 	rootCmd.PersistentFlags().StringVarP(&logfileFlag, "log", "l", "", "write logs to file")
-	rootCmd.PersistentFlags().StringVarP(&deviceFlag, "device", "d", os.Getenv("SSH_TTY"), "device")
+	rootCmd.PersistentFlags().StringVarP(&deviceFlag, "device", "d", os.Getenv("SSH_TTY"), "select device")
 
 	if deviceFlag == "" {
 		deviceFlag = os.Getenv("/dev/tty")

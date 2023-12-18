@@ -30,6 +30,7 @@ Available Commands:
   version     Outputs version information
 
 Flags:
+  -d, --device string   select device
   -h, --help         help for osc
   -l, --log string   write logs to file
   -v, --verbose      verbose logging
