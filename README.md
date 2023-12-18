@@ -79,7 +79,7 @@ This will install the latest version of osc to `$GOPATH/bin`. To find out where 
 - [ ] [copy] check is stdin is readable
 - [ ] tmux support
 
-## for neovim
+## For neovim
 
 - set init.lua
 

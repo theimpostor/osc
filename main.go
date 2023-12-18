@@ -286,14 +286,18 @@ var rootCmd = &cobra.Command{
 	Long:  `Reads or writes the system clipboard using the ANSI OSC52 escape sequence.`,
 }
 
+func defaultDevice() string {
+	sshtty := os.Getenv("SSH_TTY")
+	if sshtty != "" {
+		return sshtty
+	}
+	return "/dev/tty"
+}
+
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose logging")
 	rootCmd.PersistentFlags().StringVarP(&logfileFlag, "log", "l", "", "write logs to file")
-	rootCmd.PersistentFlags().StringVarP(&deviceFlag, "device", "d", os.Getenv("SSH_TTY"), "select device")
-
-	if deviceFlag == "" {
-		deviceFlag = os.Getenv("/dev/tty")
-	}
+	rootCmd.PersistentFlags().StringVarP(&deviceFlag, "device", "d", defaultDevice(), "select device")
 
 	rootCmd.AddCommand(copyCmd)
 	rootCmd.AddCommand(pasteCmd)
