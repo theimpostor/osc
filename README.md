@@ -30,6 +30,7 @@ Available Commands:
   version     Outputs version information
 
 Flags:
+  -d, --device string   select device
   -h, --help         help for osc
   -l, --log string   write logs to file
   -v, --verbose      verbose logging
@@ -77,6 +78,27 @@ This will install the latest version of osc to `$GOPATH/bin`. To find out where 
 
 - [ ] [copy] check is stdin is readable
 - [ ] tmux support
+
+## For neovim
+
+- set init.lua
+
+```lua
+vim.cmd([[
+let g:clipboard = {
+  \   'name': 'osc-copy',
+  \   'copy': {
+  \      '+': 'osc copy',
+  \      '*': 'osc copy',
+  \    },
+  \   'paste': {
+  \      '+': 'osc paste',
+  \      '*': 'osc paste',
+  \   },
+  \   'cache_enabled': 0,
+  \ }
+]])
+```
 
 ## Credits
 -  [ojroques/vim-ocsyank](https://github.com/ojroques/vim-oscyank) - inspiration and introduction to OSC52
