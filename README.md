@@ -45,8 +45,8 @@ OSC52 is overall [widely supported](https://github.com/ojroques/vim-oscyank/blob
 
 Terminal | Terminal OS | Shell OS | Copy | Paste | Notes
 ---      | ---         | ---      | ---  | ---   | ---
-[alacritty](https://github.com/alacritty/alacritty) 0.12.2 | macOS | linux | &check; | &check; |
-[alacritty](https://github.com/alacritty/alacritty) 0.12.2 | macOS | macOS | &check; | &check; |
+[alacritty](https://github.com/alacritty/alacritty) 0.13.1 | macOS | linux | &check; | &check; | Paste support requires [setting](https://alacritty.org/config-alacritty.html) `terminal.osc52` to `CopyPaste` or `OnlyPaste`
+[alacritty](https://github.com/alacritty/alacritty) 0.13.1 | macOS | macOS | &check; | &check; | Paste support requires [setting](https://alacritty.org/config-alacritty.html) `terminal.osc52` to `CopyPaste` or `OnlyPaste`
 [alacritty](https://github.com/alacritty/alacritty) 0.12.1 | Windows | linux | &check; | &cross; |
 [kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | linux | &check; | &check; | Prompts for access
 [kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | macOS | &check; | &check; | Prompts for access
