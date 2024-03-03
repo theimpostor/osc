@@ -26,6 +26,7 @@ var (
 	verboseFlag bool
 	logfileFlag string
 	deviceFlag  string
+	timeoutFlag float64
 )
 
 func encode(fname string, encoder io.WriteCloser) {
@@ -152,7 +153,8 @@ func copy(fnames []string) error {
 }
 
 func paste() error {
-	slog.Debug("Beginning osc52 paste operation")
+	timeout := time.Duration(timeoutFlag*1_000_000_000) * time.Nanosecond
+	slog.Debug(fmt.Sprintf("Beginning osc52 paste operation, timeout: %s", timeout))
 	if data, err := func() ([]byte, error) {
 		tty, err := opentty()
 		if err != nil {
@@ -180,7 +182,7 @@ func paste() error {
 		select {
 		case b := <-readChan:
 			buf = append(buf, b)
-		case <-time.After(1 * time.Second):
+		case <-time.After(timeout):
 			slog.Debug("tty read timeout")
 			return nil, fmt.Errorf("tty read timeout")
 		}
@@ -298,6 +300,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose logging")
 	rootCmd.PersistentFlags().StringVarP(&logfileFlag, "log", "l", "", "write logs to file")
 	rootCmd.PersistentFlags().StringVarP(&deviceFlag, "device", "d", defaultDevice(), "select device")
+	rootCmd.PersistentFlags().Float64VarP(&timeoutFlag, "timeout", "t", 5, "tty read timeout in seconds")
 
 	rootCmd.AddCommand(copyCmd)
 	rootCmd.AddCommand(pasteCmd)
