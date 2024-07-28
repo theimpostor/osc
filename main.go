@@ -199,7 +199,7 @@ func paste() error {
 				}
 				buf = append(buf, b)
 				// Skip initial 7 bytes of response
-				if len(buf) > 9 && buf[len(buf)-2] == '\x1b' && buf[len(buf)-1] == '\\' {
+				if len(buf) >= 9 && buf[len(buf)-2] == '\x1b' && buf[len(buf)-1] == '\\' {
 					buf = buf[:len(buf)-2]
 					break
 				}
