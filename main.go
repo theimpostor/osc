@@ -192,7 +192,7 @@ func paste() error {
 				slog.Error(fmt.Sprintf("ReadByte: %v", e))
 				return nil, e
 			} else {
-				slog.Debug(fmt.Sprintf("Read: %x '%s'", b, string(b)))
+				slog.Debug(fmt.Sprintf("Read: %x %q", b, string(b)))
 				// Terminator might be BEL (\a) or ESC-backslash (\x1b\\)
 				if b == '\a' {
 					break
