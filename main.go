@@ -23,6 +23,7 @@ var (
 	oscOpen     string = "\x1b]52;c;"
 	oscClose    string = "\a"
 	isScreen    bool
+	isTmux      bool
 	verboseFlag bool
 	logfileFlag string
 	deviceFlag  string
@@ -90,7 +91,9 @@ func initLogging() (logfile *os.File) {
 }
 
 func identifyTerm() {
-	if ti, err := tcell.LookupTerminfo(os.Getenv("TERM")); err != nil {
+	if os.Getenv("TMUX") != "" {
+		isTmux = true
+	} else if ti, err := tcell.LookupTerminfo(os.Getenv("TERM")); err != nil {
 		slog.Error(fmt.Sprintf("Failed to lookup terminfo: %v", err))
 	} else {
 		slog.Debug(fmt.Sprintf("term name: %s, aliases: %q", ti.Name, ti.Aliases))
@@ -102,6 +105,10 @@ func identifyTerm() {
 	if isScreen {
 		slog.Debug("Setting screen dcs passthrough")
 		oscOpen = "\x1bP" + oscOpen
+		oscClose = oscClose + "\x1b\\"
+	} else if isTmux {
+		slog.Debug("Setting tmux dcs passthrough")
+		oscOpen = "\x1bPtmux;\x1b" + oscOpen
 		oscClose = oscClose + "\x1b\\"
 	}
 }
