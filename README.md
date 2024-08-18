@@ -64,7 +64,9 @@ Terminal Multiplexer | Copy | Paste | Notes
 ---                  | ---  | ---   | ---
 [screen](https://www.gnu.org/software/screen/) 4.09.00 | &check; | &check; |
 [zellij](https://zellij.dev/) 0.37.2 | &check; | [&cross;](https://github.com/zellij-org/zellij/issues/2647) |
-[tmux](https://github.com/tmux/tmux) 3.2a | &cross; | &cross; | May require configuration
+[tmux](https://github.com/tmux/tmux) 3.3 | &check; | &check; |
+[`allow-passthrough` should be
+enabled](https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it)
 
 ## Installation
 
@@ -77,7 +79,6 @@ This will install the latest version of osc to `$GOPATH/bin`. To find out where 
 ## TODO
 
 - [ ] [copy] check is stdin is readable
-- [ ] tmux support
 
 ## For neovim
 
