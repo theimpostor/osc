@@ -25,6 +25,7 @@ var (
 	oscClose    string = "\a"
 	isScreen    bool
 	isTmux      bool
+	isZellij    bool
 	verboseFlag bool
 	logfileFlag string
 	deviceFlag  string
@@ -90,6 +91,9 @@ func initLogging() (logfile *os.File) {
 }
 
 func identifyTerm() {
+	if os.Getenv("ZELLIJ") != "" {
+		isZellij = true
+	}
 	if os.Getenv("TMUX") != "" {
 		isTmux = true
 	} else if ti, err := tcell.LookupTerminfo(os.Getenv("TERM")); err != nil {
@@ -163,6 +167,9 @@ func copy(fnames []string) error {
 }
 
 func paste() error {
+	if isZellij {
+		return fmt.Errorf("paste unsupported under zellij, unset ZELLIJ env var to force")
+	}
 	timeout := time.Duration(timeoutFlag*1_000_000_000) * time.Nanosecond
 	slog.Debug(fmt.Sprintf("Beginning osc52 paste operation, timeout: %s", timeout))
 	if data, err := func() ([]byte, error) {
