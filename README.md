@@ -5,13 +5,25 @@ System clipboard access includes writing (i.e. copy) and reading (i.e. paste), e
 
 ## Examples
 
+#### Copying to the clipboard
+
 ```
-❯ echo asdf | osc copy
-
+❯ echo -n asdf | osc copy
 # String 'asdf' copied to clipboard
+```
 
+#### Pasting from the clipboard
+
+```
 ❯ osc paste
 asdf
+```
+
+#### Clearing the clipboard
+
+```
+❯ osc copy  /dev/null
+# Clipboard cleared
 ```
 
 ## Usage
@@ -30,13 +42,13 @@ Available Commands:
   version     Outputs version information
 
 Flags:
-  -d, --device string   select device
-  -h, --help         help for osc
-  -l, --log string   write logs to file
-  -v, --verbose      verbose logging
+  -d, --device string   select device (default "/dev/tty")
+  -h, --help            help for osc
+  -l, --log string      write logs to file
+  -t, --timeout float   tty read timeout in seconds (default 5)
+  -v, --verbose         verbose logging
 
 Use "osc [command] --help" for more information about a command.
-
 ```
 
 ## Compatibility
@@ -57,8 +69,7 @@ Terminal | Terminal OS | Shell OS | Copy | Paste | Notes
 
 #### Terminal Multiplexer support
 
-Using [alacritty](https://github.com/alacritty/alacritty) as the terminal,
-default configuration options for multiplexer:
+Using [alacritty](https://github.com/alacritty/alacritty) as the terminal:
 
 Terminal Multiplexer | Copy | Paste | Notes
 ---                  | ---  | ---   | ---
@@ -73,10 +84,6 @@ go install -v github.com/theimpostor/osc@latest
 ```
 
 This will install the latest version of osc to `$GOPATH/bin`. To find out where `$GOPATH` is, run `go env GOPATH`
-
-## TODO
-
-- [ ] [copy] check is stdin is readable
 
 ## For neovim
 
