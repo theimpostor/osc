@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/jba/slog/handlers/loghandler"
-	"golang.org/x/exp/slog"
 
 	"runtime/debug"
 
@@ -65,7 +65,6 @@ func closetty(tty tcell.Tty) {
 
 func initLogging() (logfile *os.File) {
 	var err error
-	logLevel := &slog.LevelVar{} // INFO
 	logOutput := os.Stdout
 
 	if logfileFlag != "" {
@@ -76,13 +75,12 @@ func initLogging() (logfile *os.File) {
 		}
 	}
 
+	var opts *slog.HandlerOptions
 	if verboseFlag {
-		logLevel.Set(slog.LevelDebug)
+		opts = &slog.HandlerOptions{Level: slog.LevelDebug}
 	}
 
-	logger := slog.New(loghandler.New(logOutput, &slog.HandlerOptions{
-		Level: logLevel,
-	}))
+	logger := slog.New(loghandler.New(logOutput, opts))
 
 	slog.SetDefault(logger)
 	slog.Debug("logging started")
