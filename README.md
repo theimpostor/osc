@@ -64,9 +64,7 @@ Terminal Multiplexer | Copy | Paste | Notes
 ---                  | ---  | ---   | ---
 [screen](https://www.gnu.org/software/screen/) 4.09.00 | &check; | &check; |
 [zellij](https://zellij.dev/) 0.37.2 | &check; | [&cross;](https://github.com/zellij-org/zellij/issues/2647) |
-[tmux](https://github.com/tmux/tmux) 3.3 | &check; | &check; |
-[`allow-passthrough` should be
-enabled](https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it)
+[tmux](https://github.com/tmux/tmux) 3.3 | &check; | &check; | [`allow-passthrough` should be enabled](https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it)
 
 ## Installation
 
