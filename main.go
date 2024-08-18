@@ -13,6 +13,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/jba/slog/handlers/loghandler"
+	"github.com/mattn/go-isatty"
 
 	"runtime/debug"
 
@@ -114,6 +115,10 @@ func identifyTerm() {
 func copy(fnames []string) error {
 	// copy
 	if len(fnames) == 0 {
+		if isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd()) {
+			return fmt.Errorf("nothing on stdin")
+		}
+
 		fnames = []string{"-"}
 	} else {
 		for _, fname := range fnames {
