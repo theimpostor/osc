@@ -8,6 +8,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -118,6 +119,17 @@ func identifyTerm() {
 
 func copy(fnames []string) error {
 	// copy
+	if isTmux {
+		if out, err := exec.Command("tmux", "show", "-v", "allow-passthrough").Output(); err != nil {
+			return fmt.Errorf("error running 'tmux show -v allow-passthrough': %w", err)
+		} else {
+			outStr := strings.TrimSpace(string(out))
+			slog.Debug(fmt.Sprintf("'tmux show -v allow-passthrough': %v", outStr))
+			if outStr != "on" && outStr != "all" {
+				return fmt.Errorf("tmux allow-passthrough must be set to 'on' or 'all'")
+			}
+		}
+	}
 	if len(fnames) == 0 {
 		if isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd()) {
 			return fmt.Errorf("nothing on stdin")
@@ -166,8 +178,38 @@ func copy(fnames []string) error {
 	return err
 }
 
+func tmux_paste() error {
+	if out, err := exec.Command("tmux", "show", "-v", "set-clipboard").Output(); err != nil {
+		return fmt.Errorf("error running 'tmux show -v set-clipboard': %w", err)
+	} else {
+		outStr := strings.TrimSpace(string(out))
+		slog.Debug(fmt.Sprintf("'tmux show -v set-clipboard': %v", outStr))
+		if outStr != "on" && outStr != "external" {
+			return fmt.Errorf("tmux set-clipboard must be set to 'on' or 'external'")
+		}
+	}
+	// refresh client list
+	if out, err := exec.Command("tmux", "refresh-client", "-l").Output(); err != nil {
+		return fmt.Errorf("error running 'tmux refresh-client -l': %v", err)
+	} else {
+		slog.Debug(fmt.Sprintf("tmux refresh-client output: %s", string(out)))
+	}
+	// give terminal time to sync
+	// https://github.com/rumpelsepp/oscclip/blob/6a4847ed5497baa9a9357b389f492f5d52c6867c/oscclip/__init__.py#L73
+	time.Sleep(50 * time.Millisecond)
+	if out, err := exec.Command("tmux", "save-buffer", "-").Output(); err != nil {
+		return fmt.Errorf("error running 'tmux save-buffer -': %v", err)
+	} else if _, err := os.Stdout.Write(out); err != nil {
+		slog.Error(fmt.Sprintf("Error writing to stdout: %v", err))
+		return err
+	}
+	return nil
+}
+
 func paste() error {
-	if isZellij {
+	if isTmux {
+		return tmux_paste()
+	} else if isZellij {
 		return fmt.Errorf("paste unsupported under zellij, unset ZELLIJ env var to force")
 	}
 	timeout := time.Duration(timeoutFlag*1_000_000_000) * time.Nanosecond
