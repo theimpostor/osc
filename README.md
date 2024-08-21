@@ -85,9 +85,9 @@ go install -v github.com/theimpostor/osc@latest
 
 This will install the latest version of osc to `$GOPATH/bin`. To find out where `$GOPATH` is, run `go env GOPATH`
 
-## For neovim
+## Neovim clipboard Provider
 
-- set init.lua
+osc can be used as the clipboard provider for Neovim:
 
 ```lua
 vim.cmd([[
@@ -105,6 +105,8 @@ let g:clipboard = {
   \ }
 ]])
 ```
+
+N.B. Neovim 0.10 introduced native support for OSC52, so this may not be needed. See the [Neovim documentation](https://neovim.io/doc/user/provider.html#clipboard-osc52).
 
 ## Credits
 -  [ojroques/vim-ocsyank](https://github.com/ojroques/vim-oscyank) - inspiration and introduction to OSC52
