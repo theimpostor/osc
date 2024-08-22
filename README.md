@@ -63,7 +63,7 @@ Terminal | Terminal OS | Shell OS | Copy | Paste | Notes
 [kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | linux | &check; | &check; | Prompts for access
 [kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | macOS | &check; | &check; | Prompts for access
 [windows terminal](https://github.com/microsoft/terminal) v1.17.11461.0 | Windows | linux | &check; | &cross; |
-[iterm2](https://iterm2.com/) | macOS | linux | &check; | &check; | Paste requires version 3.5.0 (currently beta). Prompts for access.
+[iterm2](https://iterm2.com/) | macOS | linux | &check; | &check; | Paste requires version 3.5.0. Prompts for access.
 [iterm2](https://iterm2.com/) | macOS | macOS | &check; | &check; | Paste requires version 3.5.0 (currently beta). Prompts for access.
 [hterm](https://chrome.google.com/webstore/detail/secure-shell/iodihamcpbpeioajjeobimgagajmlibd) | ChromeOS | linux | &check; | &cross; |
 
@@ -110,5 +110,5 @@ N.B. Neovim 0.10 introduced native support for OSC52, so this may not be needed.
 
 ## Credits
 -  [ojroques/vim-ocsyank](https://github.com/ojroques/vim-oscyank) - inspiration and introduction to OSC52
--  [rumpelsepp/oscclip](https://github.com/rumpelsepp/oscclip) - working python implementation
+-  [rumpelsepp/oscclip](https://github.com/rumpelsepp/oscclip/tree/v0.4.1) - working python implementation
 -  [gdamore/tcell](https://github.com/gdamore/tcell) - terminal handling
