@@ -64,7 +64,7 @@ Terminal | Terminal OS | Shell OS | Copy | Paste | Notes
 [kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | macOS | &check; | &check; | Prompts for access
 [windows terminal](https://github.com/microsoft/terminal) v1.17.11461.0 | Windows | linux | &check; | &cross; |
 [iterm2](https://iterm2.com/) | macOS | linux | &check; | &check; | Paste requires version 3.5.0. Prompts for access.
-[iterm2](https://iterm2.com/) | macOS | macOS | &check; | &check; | Paste requires version 3.5.0 (currently beta). Prompts for access.
+[iterm2](https://iterm2.com/) | macOS | macOS | &check; | &check; | Paste requires version 3.5.0. Prompts for access.
 [hterm](https://chrome.google.com/webstore/detail/secure-shell/iodihamcpbpeioajjeobimgagajmlibd) | ChromeOS | linux | &check; | &cross; |
 
 #### Terminal Multiplexer support
