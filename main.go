@@ -117,9 +117,9 @@ func identifyTerm() {
 	}
 }
 
-// Breaks up every 250 bytes with a screen dcs end + start sequence
+// Inserts screen dcs end + start sequence into long sequences
 // Based on: https://github.com/chromium/hterm/blob/6846a85f9579a8dfdef4405cc50d9fb17d8944aa/etc/osc52.sh#L23
-const chunkSize = 250
+const chunkSize = 252
 
 type chunkingWriter struct {
 	bytesWritten int64
@@ -189,18 +189,17 @@ func copy(fnames []string) error {
 		defer closetty(tty)
 
 		// Open buffered output, using default max OSC52 length as buffer size
-		var out *bufio.Writer
-		if isScreen {
-			// TODO: stdout or tty?
-			out = bufio.NewWriterSize(&chunkingWriter{writer: os.Stdout}, 1000000)
-		} else {
-			out = bufio.NewWriterSize(tty, 1000000)
-		}
+		out := bufio.NewWriterSize(tty, 1000000)
 
 		// Start OSC52
 		fmt.Fprint(out, oscOpen)
 
-		b64 := base64.NewEncoder(base64.StdEncoding, out)
+		var b64 io.WriteCloser
+		if !isScreen {
+			b64 = base64.NewEncoder(base64.StdEncoding, out)
+		} else {
+			b64 = base64.NewEncoder(base64.StdEncoding, &chunkingWriter{writer: out})
+		}
 		for _, fname := range fnames {
 			encode(fname, b64)
 		}
