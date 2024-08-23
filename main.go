@@ -117,6 +117,39 @@ func identifyTerm() {
 	}
 }
 
+// Breaks up every 250 bytes with a screen dcs end + start sequence
+// Based on: https://github.com/chromium/hterm/blob/6846a85f9579a8dfdef4405cc50d9fb17d8944aa/etc/osc52.sh#L23
+const chunkSize = 250
+
+type chunkingWriter struct {
+	bytesWritten int64
+	writer       io.Writer
+}
+
+func (w *chunkingWriter) Write(p []byte) (n int, err error) {
+	slog.Debug(fmt.Sprintf("chunkingWriter got %d bytes", len(p)))
+
+	for err == nil && len(p) > 0 {
+		bytesWritten := 0
+		chunksWritten := w.bytesWritten / chunkSize
+		nextChunkBoundary := (chunksWritten + 1) * chunkSize
+
+		if w.bytesWritten+int64(len(p)) < nextChunkBoundary {
+			bytesWritten, err = w.writer.Write(p)
+		} else {
+			bytesWritten, err = w.writer.Write(p[:nextChunkBoundary-w.bytesWritten])
+			if err == nil {
+				_, err = w.writer.Write([]byte("\x1b\\\x1bP"))
+			}
+		}
+		w.bytesWritten += int64(bytesWritten)
+		n += bytesWritten
+		p = p[bytesWritten:]
+	}
+
+	return
+}
+
 func copy(fnames []string) error {
 	// copy
 	if isTmux {
@@ -156,8 +189,13 @@ func copy(fnames []string) error {
 		defer closetty(tty)
 
 		// Open buffered output, using default max OSC52 length as buffer size
-		// TODO limit size
-		out := bufio.NewWriterSize(tty, 1000000)
+		var out *bufio.Writer
+		if isScreen {
+			// TODO: stdout or tty?
+			out = bufio.NewWriterSize(&chunkingWriter{writer: os.Stdout}, 1000000)
+		} else {
+			out = bufio.NewWriterSize(tty, 1000000)
+		}
 
 		// Start OSC52
 		fmt.Fprint(out, oscOpen)
