@@ -53,7 +53,9 @@ func encode(fname string, encoder io.WriteCloser) {
 }
 
 func opentty() (tty tcell.Tty, err error) {
-	tty, err = tcell.NewDevTtyFromDev(deviceFlag)
+	device := ttyDevice()
+	debugLog.Println("Using tty device:", device)
+	tty, err = tcell.NewDevTtyFromDev(device)
 	if err == nil {
 		err = tty.Start()
 	}
@@ -395,18 +397,22 @@ var rootCmd = &cobra.Command{
 	Long:  `Reads or writes the system clipboard using the ANSI OSC52 escape sequence.`,
 }
 
-func defaultDevice() string {
-	sshtty := os.Getenv("SSH_TTY")
-	if sshtty != "" {
+func ttyDevice() string {
+	if deviceFlag != "" {
+		return deviceFlag
+	} else if isScreen {
+		return "/dev/tty"
+	} else if sshtty := os.Getenv("SSH_TTY"); sshtty != "" {
 		return sshtty
+	} else {
+		return "/dev/tty"
 	}
-	return "/dev/tty"
 }
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose logging")
 	rootCmd.PersistentFlags().StringVarP(&logfileFlag, "log", "l", "", "write logs to file")
-	rootCmd.PersistentFlags().StringVarP(&deviceFlag, "device", "d", defaultDevice(), "select device")
+	rootCmd.PersistentFlags().StringVarP(&deviceFlag, "device", "d", "", "use specific tty device")
 	rootCmd.PersistentFlags().Float64VarP(&timeoutFlag, "timeout", "t", 5, "tty read timeout in seconds")
 
 	rootCmd.AddCommand(copyCmd)
