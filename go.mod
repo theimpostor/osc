@@ -6,7 +6,6 @@ toolchain go1.23.0
 
 require (
 	github.com/gdamore/tcell/v2 v2.7.4
-	github.com/jba/slog v0.2.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/spf13/cobra v1.8.1
 )

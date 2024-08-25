@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/jba/slog/handlers/loghandler"
 	"github.com/mattn/go-isatty"
 
 	"runtime/debug"
@@ -31,6 +29,8 @@ var (
 	logfileFlag string
 	deviceFlag  string
 	timeoutFlag float64
+	debugLog    *log.Logger
+	errorLog    *log.Logger
 )
 
 func encode(fname string, encoder io.WriteCloser) {
@@ -66,6 +66,17 @@ func closetty(tty tcell.Tty) {
 	tty.Close()
 }
 
+// log levels to handle:
+// debug
+// error
+// discarding logger: myLogger = log.New(io.Discard, "", 0)
+// printing methods:
+// Print: multiple args, adds space between non-string arguments
+// Printf: first arg format, rest args
+// Println multiple args, always adds space between args and a newline
+// all print functions add a new line if absent
+// File io.Writer is 'safe for concurrent use'
+// Lmsgefix                    // move the "prefix" from the beginning of the line to before the message
 func initLogging() (logfile *os.File) {
 	var err error
 	logOutput := os.Stdout
@@ -78,15 +89,15 @@ func initLogging() (logfile *os.File) {
 		}
 	}
 
-	var opts *slog.HandlerOptions
+	log.SetOutput(logOutput)
+	errorLog = log.New(logOutput, "ERROR ", log.LstdFlags|log.Lmsgprefix)
 	if verboseFlag {
-		opts = &slog.HandlerOptions{Level: slog.LevelDebug}
+		debugLog = log.New(logOutput, "DEBUG ", log.LstdFlags|log.Lmsgprefix)
+	} else {
+		debugLog = log.New(io.Discard, "", 0)
 	}
 
-	logger := slog.New(loghandler.New(logOutput, opts))
-
-	slog.SetDefault(logger)
-	slog.Debug("logging started")
+	debugLog.Println("logging started")
 
 	return
 }
@@ -98,20 +109,20 @@ func identifyTerm() {
 	if os.Getenv("TMUX") != "" {
 		isTmux = true
 	} else if ti, err := tcell.LookupTerminfo(os.Getenv("TERM")); err != nil {
-		slog.Error(fmt.Sprintf("Failed to lookup terminfo: %v", err))
+		errorLog.Println("Failed to lookup terminfo:", err)
 	} else {
-		slog.Debug(fmt.Sprintf("term name: %s, aliases: %q", ti.Name, ti.Aliases))
+		debugLog.Printf("term name: %s, aliases: %q", ti.Name, ti.Aliases)
 		if strings.HasPrefix(ti.Name, "screen") {
 			isScreen = true
 		}
 	}
 
 	if isScreen {
-		slog.Debug("Setting screen dcs passthrough")
+		debugLog.Println("Setting screen dcs passthrough")
 		oscOpen = "\x1bP" + oscOpen
 		oscClose = oscClose + "\x1b\\"
 	} else if isTmux {
-		slog.Debug("Setting tmux dcs passthrough")
+		debugLog.Println("Setting tmux dcs passthrough")
 		oscOpen = "\x1bPtmux;\x1b" + oscOpen
 		oscClose = oscClose + "\x1b\\"
 	}
@@ -127,7 +138,7 @@ type chunkingWriter struct {
 }
 
 func (w *chunkingWriter) Write(p []byte) (n int, err error) {
-	slog.Debug(fmt.Sprintf("chunkingWriter got %d bytes", len(p)))
+	debugLog.Println("chunkingWriter got", len(p), "bytes")
 
 	for err == nil && len(p) > 0 {
 		bytesWritten := 0
@@ -157,7 +168,7 @@ func copy(fnames []string) error {
 			return fmt.Errorf("error running 'tmux show -v allow-passthrough': %w", err)
 		} else {
 			outStr := strings.TrimSpace(string(out))
-			slog.Debug(fmt.Sprintf("'tmux show -v allow-passthrough': %v", outStr))
+			debugLog.Println("'tmux show -v allow-passthrough':", outStr)
 			if outStr != "on" && outStr != "all" {
 				return fmt.Errorf("tmux allow-passthrough must be set to 'on' or 'all'")
 			}
@@ -179,11 +190,11 @@ func copy(fnames []string) error {
 		}
 	}
 
-	slog.Debug("Beginning osc52 copy operation")
+	debugLog.Println("Beginning osc52 copy operation")
 	err := func() error {
 		tty, err := opentty()
 		if err != nil {
-			slog.Error(fmt.Sprintf("opentty: %v", err))
+			errorLog.Println("opentty:", err)
 			return err
 		}
 		defer closetty(tty)
@@ -211,7 +222,7 @@ func copy(fnames []string) error {
 		out.Flush()
 		return nil
 	}()
-	slog.Debug("Ended osc52")
+	debugLog.Println("Ended osc52")
 	return err
 }
 
@@ -220,7 +231,7 @@ func tmux_paste() error {
 		return fmt.Errorf("error running 'tmux show -v set-clipboard': %w", err)
 	} else {
 		outStr := strings.TrimSpace(string(out))
-		slog.Debug(fmt.Sprintf("'tmux show -v set-clipboard': %v", outStr))
+		debugLog.Println("'tmux show -v set-clipboard':", outStr)
 		if outStr != "on" && outStr != "external" {
 			return fmt.Errorf("tmux set-clipboard must be set to 'on' or 'external'")
 		}
@@ -229,7 +240,7 @@ func tmux_paste() error {
 	if out, err := exec.Command("tmux", "refresh-client", "-l").Output(); err != nil {
 		return fmt.Errorf("error running 'tmux refresh-client -l': %v", err)
 	} else {
-		slog.Debug(fmt.Sprintf("tmux refresh-client output: %s", string(out)))
+		debugLog.Println("tmux refresh-client output:", string(out))
 	}
 	// give terminal time to sync
 	// https://github.com/rumpelsepp/oscclip/blob/6a4847ed5497baa9a9357b389f492f5d52c6867c/oscclip/__init__.py#L73
@@ -237,7 +248,7 @@ func tmux_paste() error {
 	if out, err := exec.Command("tmux", "save-buffer", "-").Output(); err != nil {
 		return fmt.Errorf("error running 'tmux save-buffer -': %v", err)
 	} else if _, err := os.Stdout.Write(out); err != nil {
-		slog.Error(fmt.Sprintf("Error writing to stdout: %v", err))
+		errorLog.Println("Error writing to stdout:", err)
 		return err
 	}
 	return nil
@@ -250,11 +261,11 @@ func paste() error {
 		return fmt.Errorf("paste unsupported under zellij, unset ZELLIJ env var to force")
 	}
 	timeout := time.Duration(timeoutFlag*1_000_000_000) * time.Nanosecond
-	slog.Debug(fmt.Sprintf("Beginning osc52 paste operation, timeout: %s", timeout))
+	debugLog.Println("Beginning osc52 paste operation, timeout:", timeout)
 	if data, err := func() ([]byte, error) {
 		tty, err := opentty()
 		if err != nil {
-			slog.Error(fmt.Sprintf("opentty: %v", err))
+			errorLog.Println("opentty:", err)
 			return nil, err
 		}
 		defer closetty(tty)
@@ -270,7 +281,7 @@ func paste() error {
 		defer close(readChan)
 		go func() {
 			if b, e := ttyReader.ReadByte(); e != nil {
-				slog.Debug(fmt.Sprintf("Initial ReadByte error: %v", e))
+				debugLog.Println("Initial ReadByte error:", e)
 			} else {
 				readChan <- b
 			}
@@ -279,16 +290,16 @@ func paste() error {
 		case b := <-readChan:
 			buf = append(buf, b)
 		case <-time.After(timeout):
-			slog.Debug("tty read timeout")
+			debugLog.Println("tty read timeout")
 			return nil, fmt.Errorf("tty read timeout")
 		}
 
 		for {
 			if b, e := ttyReader.ReadByte(); e != nil {
-				slog.Error(fmt.Sprintf("ReadByte: %v", e))
+				errorLog.Println("ReadByte:", e)
 				return nil, e
 			} else {
-				slog.Debug(fmt.Sprintf("Read: %x %q", b, string(b)))
+				debugLog.Printf("Read: %x %q", b, string(b))
 				// Terminator might be BEL (\a) or ESC-backslash (\x1b\\)
 				if b == '\a' {
 					break
@@ -302,13 +313,13 @@ func paste() error {
 			}
 		}
 
-		slog.Debug(fmt.Sprintf("buf[:7]: %q", buf[:7]))
+		debugLog.Printf("buf[:7]: %q", buf[:7])
 		buf = buf[7:]
 
 		decodedBuf := make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
 		n, err := base64.StdEncoding.Decode(decodedBuf, []byte(buf))
 		if err != nil {
-			slog.Error(fmt.Sprintf("decode error: %v", err))
+			errorLog.Println("decode error:", err)
 			return nil, err
 		}
 		decodedBuf = decodedBuf[:n]
@@ -318,11 +329,11 @@ func paste() error {
 		return err
 	} else {
 		if _, err = os.Stdout.Write(data); err != nil {
-			slog.Error(fmt.Sprintf("Error writing to stdout: %v", err))
+			errorLog.Println("Error writing to stdout:", err)
 			return err
 		}
 	}
-	slog.Debug("Ended osc52")
+	debugLog.Println("Ended osc52")
 
 	return nil
 }
