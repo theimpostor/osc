@@ -132,7 +132,7 @@ func identifyTerm() {
 
 // Inserts screen dcs end + start sequence into long sequences
 // Based on: https://github.com/chromium/hterm/blob/6846a85f9579a8dfdef4405cc50d9fb17d8944aa/etc/osc52.sh#L23
-const chunkSize = 252
+const chunkSize = 76
 
 type chunkingWriter struct {
 	bytesWritten int64
