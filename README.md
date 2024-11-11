@@ -60,8 +60,10 @@ Terminal | Terminal OS | Shell OS | Copy | Paste | Notes
 [alacritty](https://github.com/alacritty/alacritty) 0.13.1 | macOS | linux | &check; | &check; | Paste support requires [setting](https://alacritty.org/config-alacritty.html) `terminal.osc52` to `CopyPaste` or `OnlyPaste`
 [alacritty](https://github.com/alacritty/alacritty) 0.13.1 | macOS | macOS | &check; | &check; | Paste support requires [setting](https://alacritty.org/config-alacritty.html) `terminal.osc52` to `CopyPaste` or `OnlyPaste`
 [alacritty](https://github.com/alacritty/alacritty) 0.12.1 | Windows | linux | &check; | &cross; |
+[alacritty](https://github.com/alacritty/alacritty) 0.13.2 | Windows | Windows | &check; | &cross; |
 [kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | linux | &check; | &check; | Prompts for access
 [kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | macOS | &check; | &check; | Prompts for access
+[windows terminal](https://github.com/microsoft/terminal) v1.17.11461.0 | Windows | Windows | &check; | &cross; |
 [windows terminal](https://github.com/microsoft/terminal) v1.17.11461.0 | Windows | linux | &check; | &cross; |
 [iterm2](https://iterm2.com/) | macOS | linux | &check; | &check; | Paste requires version 3.5.0. Prompts for access.
 [iterm2](https://iterm2.com/) | macOS | macOS | &check; | &check; | Paste requires version 3.5.0. Prompts for access.
