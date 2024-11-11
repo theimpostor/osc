@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -52,19 +53,9 @@ func encode(fname string, encoder io.WriteCloser) {
 	}
 }
 
-func opentty() (tty tcell.Tty, err error) {
-	device := ttyDevice()
-	debugLog.Println("Using tty device:", device)
-	tty, err = tcell.NewDevTtyFromDev(device)
-	if err == nil {
-		err = tty.Start()
-	}
-	return
-}
-
 func closetty(tty tcell.Tty) {
-	tty.Drain()
-	tty.Stop()
+	_ = tty.Drain()
+	_ = tty.Stop()
 	tty.Close()
 }
 
@@ -111,7 +102,11 @@ func identifyTerm() {
 	if os.Getenv("TMUX") != "" {
 		isTmux = true
 	} else if ti, err := tcell.LookupTerminfo(os.Getenv("TERM")); err != nil {
-		errorLog.Println("Failed to lookup terminfo:", err)
+		if runtime.GOOS != "windows" {
+			errorLog.Println("Failed to lookup terminfo:", err)
+		} else {
+			debugLog.Println("On Windows, failed to lookup terminfo:", err)
+		}
 	} else {
 		debugLog.Printf("term name: %s, aliases: %q", ti.Name, ti.Aliases)
 		if strings.HasPrefix(ti.Name, "screen") {
