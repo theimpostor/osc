@@ -20,9 +20,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	ESC       = '\x1b'
+	BEL       = '\a'
+	BS        = '\\'
+	OSC       = string(ESC) + "]52;"
+	DCS_OPEN  = string(ESC) + "P"
+	DCS_CLOSE = string(ESC) + string(BS)
+)
+
 var (
-	oscOpen     string = "\x1b]52;c;"
-	oscClose    string = "\a"
+	oscOpen     string = OSC + "c;"
+	oscClose    string = string(BEL)
 	isScreen    bool
 	isTmux      bool
 	isZellij    bool
@@ -116,12 +125,12 @@ func identifyTerm() {
 
 	if isScreen {
 		debugLog.Println("Setting screen dcs passthrough")
-		oscOpen = "\x1bP" + oscOpen
-		oscClose = oscClose + "\x1b\\"
+		oscOpen = DCS_OPEN + oscOpen
+		oscClose = oscClose + DCS_CLOSE
 	} else if isTmux {
 		debugLog.Println("Setting tmux dcs passthrough")
-		oscOpen = "\x1bPtmux;\x1b" + oscOpen
-		oscClose = oscClose + "\x1b\\"
+		oscOpen = DCS_OPEN + "tmux;" + string(ESC) + oscOpen
+		oscClose = oscClose + DCS_CLOSE
 	}
 }
 
@@ -147,7 +156,7 @@ func (w *chunkingWriter) Write(p []byte) (n int, err error) {
 		} else {
 			bytesWritten, err = w.writer.Write(p[:nextChunkBoundary-w.bytesWritten])
 			if err == nil {
-				_, err = w.writer.Write([]byte("\x1b\\\x1bP"))
+				_, err = w.writer.Write([]byte(DCS_CLOSE + DCS_OPEN))
 			}
 		}
 		w.bytesWritten += int64(bytesWritten)
@@ -271,25 +280,32 @@ func paste() error {
 		fmt.Fprint(tty, oscOpen+"?"+oscClose)
 
 		ttyReader := bufio.NewReader(tty)
-		buf := make([]byte, 0, 1024)
 
 		// time out intial read
-		readChan := make(chan byte, 1)
+		readChan := make(chan []byte, 1)
 		defer close(readChan)
 		go func() {
-			if b, e := ttyReader.ReadByte(); e != nil {
-				debugLog.Println("Initial ReadByte error:", e)
+			if b, e := ttyReader.ReadSlice(';'); e != nil {
+				debugLog.Println("Initial ReadSlice error:", e)
 			} else {
 				readChan <- b
 			}
 		}()
 		select {
-		case b := <-readChan:
-			buf = append(buf, b)
+		case <-readChan:
+			// TODO: check for osc header
 		case <-time.After(timeout):
 			debugLog.Println("tty read timeout")
 			return nil, fmt.Errorf("tty read timeout")
 		}
+
+		// ignore clipboard info
+		if _, e := ttyReader.ReadSlice(';'); e != nil {
+			errorLog.Println("ReadSlice:", e)
+			return nil, e
+		}
+
+		buf := make([]byte, 0, 1024)
 
 		for {
 			if b, e := ttyReader.ReadByte(); e != nil {
@@ -303,15 +319,12 @@ func paste() error {
 				}
 				buf = append(buf, b)
 				// Skip initial 7 bytes of response
-				if len(buf) >= 9 && buf[len(buf)-2] == '\x1b' && buf[len(buf)-1] == '\\' {
+				if len(buf) >= 9 && buf[len(buf)-2] == ESC && buf[len(buf)-1] == BS {
 					buf = buf[:len(buf)-2]
 					break
 				}
 			}
 		}
-
-		debugLog.Printf("buf[:7]: %q", buf[:7])
-		buf = buf[7:]
 
 		decodedBuf := make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
 		n, err := base64.StdEncoding.Decode(decodedBuf, []byte(buf))
