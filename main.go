@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -260,6 +261,30 @@ func tmux_paste() error {
 	return nil
 }
 
+// wraps an io.Reader, reads until it encounters an ESC or BEL
+type pasteReader struct {
+	r io.Reader
+}
+
+func (pr *pasteReader) Read(p []byte) (int, error) {
+	n, err := pr.r.Read(p)
+	if i := bytes.IndexByte(p, BEL); i >= 0 {
+		return i, io.EOF
+	}
+	if i := bytes.IndexByte(p, ESC); i >= 0 {
+		if i+1 == n {
+			// closing sequence is ESC+BS
+			// read and discard one more byte
+			b := make([]byte, 1)
+			if _, err = pr.r.Read(b); err != nil {
+				return i, err
+			}
+		}
+		return i, io.EOF
+	}
+	return n, err
+}
+
 func paste() error {
 	if isTmux {
 		return tmux_paste()
@@ -268,81 +293,50 @@ func paste() error {
 	}
 	timeout := time.Duration(timeoutFlag*1_000_000_000) * time.Nanosecond
 	debugLog.Println("Beginning osc52 paste operation, timeout:", timeout)
-	if data, err := func() ([]byte, error) {
-		tty, err := opentty()
-		if err != nil {
-			errorLog.Println("opentty:", err)
-			return nil, err
-		}
-		defer closetty(tty)
 
-		// Start OSC52
-		fmt.Fprint(tty, oscOpen+"?"+oscClose)
-
-		ttyReader := bufio.NewReader(tty)
-
-		// time out intial read
-		readChan := make(chan []byte, 1)
-		defer close(readChan)
-		go func() {
-			if b, e := ttyReader.ReadSlice(';'); e != nil {
-				debugLog.Println("Initial ReadSlice error:", e)
-			} else {
-				readChan <- b
-			}
-		}()
-		select {
-		case <-readChan:
-			// TODO: check for osc header
-		case <-time.After(timeout):
-			debugLog.Println("tty read timeout")
-			return nil, fmt.Errorf("tty read timeout")
-		}
-
-		// ignore clipboard info
-		if _, e := ttyReader.ReadSlice(';'); e != nil {
-			errorLog.Println("ReadSlice:", e)
-			return nil, e
-		}
-
-		buf := make([]byte, 0, 1024)
-
-		for {
-			if b, e := ttyReader.ReadByte(); e != nil {
-				errorLog.Println("ReadByte:", e)
-				return nil, e
-			} else {
-				debugLog.Printf("Read: %x %q", b, string(b))
-				// Terminator might be BEL (\a) or ESC-backslash (\x1b\\)
-				if b == '\a' {
-					break
-				}
-				buf = append(buf, b)
-				// Skip initial 7 bytes of response
-				if len(buf) >= 9 && buf[len(buf)-2] == ESC && buf[len(buf)-1] == BS {
-					buf = buf[:len(buf)-2]
-					break
-				}
-			}
-		}
-
-		decodedBuf := make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
-		n, err := base64.StdEncoding.Decode(decodedBuf, []byte(buf))
-		if err != nil {
-			errorLog.Println("decode error:", err)
-			return nil, err
-		}
-		decodedBuf = decodedBuf[:n]
-
-		return decodedBuf, nil
-	}(); err != nil {
+	tty, err := opentty()
+	if err != nil {
+		errorLog.Println("opentty:", err)
 		return err
-	} else {
-		if _, err = os.Stdout.Write(data); err != nil {
-			errorLog.Println("Error writing to stdout:", err)
-			return err
-		}
 	}
+	defer closetty(tty)
+
+	// Start OSC52
+	fmt.Fprint(tty, oscOpen+"?"+oscClose)
+
+	ttyReader := bufio.NewReader(tty)
+
+	// time out intial read
+	readChan := make(chan []byte, 1)
+	defer close(readChan)
+	go func() {
+		if b, e := ttyReader.ReadSlice(';'); e != nil {
+			debugLog.Println("Initial ReadSlice error:", e)
+		} else {
+			readChan <- b
+		}
+	}()
+	select {
+	case <-readChan:
+		// TODO: check for osc header
+	case <-time.After(timeout):
+		debugLog.Println("tty read timeout")
+		return fmt.Errorf("tty read timeout")
+	}
+
+	// ignore clipboard info
+	if _, e := ttyReader.ReadSlice(';'); e != nil {
+		errorLog.Println("ReadSlice:", e)
+		return e
+	}
+
+	pr := pasteReader{r: ttyReader}
+	decoder := base64.NewDecoder(base64.StdEncoding, &pr)
+	if _, err = io.Copy(os.Stdout, decoder); err != nil {
+		errorLog.Println("Error writing to stdout:", err)
+		return err
+	}
+
 	debugLog.Println("Ended osc52")
 
 	return nil
