@@ -285,6 +285,17 @@ func (pr *pasteReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
+type debugReader struct {
+	prefix string
+	r      io.Reader
+}
+
+func (dr *debugReader) Read(p []byte) (int, error) {
+	n, err := dr.r.Read(p)
+	debugLog.Printf("%s: %v %v %q", dr.prefix, n, err, p[:n])
+	return n, err
+}
+
 func paste() error {
 	if isTmux {
 		return tmux_paste()
@@ -304,21 +315,32 @@ func paste() error {
 	// Start OSC52
 	fmt.Fprint(tty, oscOpen+"?"+oscClose)
 
-	ttyReader := bufio.NewReader(tty)
+	var ttyReader *bufio.Reader
+	if verboseFlag {
+		ttyReader = bufio.NewReader(&debugReader{
+			prefix: "tty read",
+			r:      tty,
+		})
+	} else {
+		ttyReader = bufio.NewReader(tty)
+	}
 
 	// time out intial read
 	readChan := make(chan []byte, 1)
 	defer close(readChan)
 	go func() {
 		if b, e := ttyReader.ReadSlice(';'); e != nil {
-			debugLog.Println("Initial ReadSlice error:", e)
+			errorLog.Println("Initial ReadSlice error:", e)
 		} else {
 			readChan <- b
 		}
 	}()
 	select {
-	case <-readChan:
-		// TODO: check for osc header
+	case b := <-readChan:
+		if !bytes.Equal(b, []byte(OSC)) {
+			errorLog.Printf("osc header mismatch: %q", b)
+			return fmt.Errorf("osc header mismatch: %q", b)
+		}
 	case <-time.After(timeout):
 		debugLog.Println("tty read timeout")
 		return fmt.Errorf("tty read timeout")
@@ -326,15 +348,15 @@ func paste() error {
 
 	// ignore clipboard info
 	if _, e := ttyReader.ReadSlice(';'); e != nil {
-		errorLog.Println("ReadSlice:", e)
-		return e
+		errorLog.Println("clipboard metadata ReadSlice:", e)
+		return fmt.Errorf("clipboard metadata ReadSlice: %w", e)
 	}
 
 	pr := pasteReader{r: ttyReader}
 	decoder := base64.NewDecoder(base64.StdEncoding, &pr)
 	if _, err = io.Copy(os.Stdout, decoder); err != nil {
-		errorLog.Println("Error writing to stdout:", err)
-		return err
+		errorLog.Println("Error copying to stdout:", err)
+		return fmt.Errorf("Error copying to stdout: %w", err)
 	}
 
 	debugLog.Println("Ended osc52")
