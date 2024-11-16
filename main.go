@@ -42,9 +42,21 @@ var (
 	timeoutFlag float64
 	debugLog    *log.Logger
 	errorLog    *log.Logger
+
+	// error exit paths:
+	// option 1:
+	//   print message, no timestamp
+	//   exit non-zero
+	//   => set returnCode, do not return err from rootCmd.Execute()
+	// option 2:
+	//   print message, no timestamp
+	//   print usage
+	//   exit non-zero
+	//   => return err from rootCmd.Execute()
+	returnCode int = 0
 )
 
-func encode(fname string, encoder io.WriteCloser) {
+func encode(fname string, encoder io.WriteCloser) error {
 	var f *os.File
 	var err error
 
@@ -52,15 +64,17 @@ func encode(fname string, encoder io.WriteCloser) {
 		f = os.Stdin
 	} else {
 		if f, err = os.Open(fname); err != nil {
-			log.Fatalf("Failed to open file %v: %v", fname, err)
+			return fmt.Errorf("Failed to open file %v: %v", fname, err)
 		} else {
 			defer f.Close()
 		}
 	}
 
 	if _, err = io.Copy(encoder, f); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("Failed to copy file %v: %v", fname, err)
 	}
+
+	return nil
 }
 
 func closetty(tty tcell.Tty) {
@@ -80,13 +94,16 @@ func closetty(tty tcell.Tty) {
 // all print functions add a new line if absent
 // File io.Writer is 'safe for concurrent use'
 // Lmsgefix                    // move the "prefix" from the beginning of the line to before the message
-func initLogging() (logfile *os.File) {
-	var err error
+func initLogging() (*os.File, error) {
+	var (
+		err     error
+		logfile *os.File
+	)
 	logOutput := os.Stdout
 
 	if logfileFlag != "" {
 		if logOutput, err = os.OpenFile(logfileFlag, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0644); err != nil {
-			log.Fatalf("Failed to open file %v: %v", logfileFlag, err)
+			return nil, fmt.Errorf("Failed to open file %v: %v", logfileFlag, err)
 		} else {
 			logfile = logOutput
 		}
@@ -102,10 +119,10 @@ func initLogging() (logfile *os.File) {
 
 	debugLog.Println("logging started")
 
-	return
+	return logfile, nil
 }
 
-func identifyTerm() {
+func identifyTerm() error {
 	if os.Getenv("ZELLIJ") != "" {
 		isZellij = true
 	}
@@ -113,7 +130,7 @@ func identifyTerm() {
 		isTmux = true
 	} else if ti, err := tcell.LookupTerminfo(os.Getenv("TERM")); err != nil {
 		if runtime.GOOS != "windows" {
-			errorLog.Println("Failed to lookup terminfo:", err)
+			return fmt.Errorf("Failed to lookup terminfo: %w", err)
 		} else {
 			debugLog.Println("On Windows, failed to lookup terminfo:", err)
 		}
@@ -133,6 +150,8 @@ func identifyTerm() {
 		oscOpen = DCS_OPEN + "tmux;" + string(ESC) + oscOpen
 		oscClose = oscClose + DCS_CLOSE
 	}
+
+	return nil
 }
 
 // Inserts screen dcs end + start sequence into long sequences
@@ -172,7 +191,7 @@ func copy(fnames []string) error {
 	// copy
 	if isTmux {
 		if out, err := exec.Command("tmux", "show", "-v", "allow-passthrough").Output(); err != nil {
-			return fmt.Errorf("error running 'tmux show -v allow-passthrough': %w", err)
+			return fmt.Errorf("Error running 'tmux show -v allow-passthrough': %w", err)
 		} else {
 			outStr := strings.TrimSpace(string(out))
 			debugLog.Println("'tmux show -v allow-passthrough':", outStr)
@@ -183,14 +202,14 @@ func copy(fnames []string) error {
 	}
 	if len(fnames) == 0 {
 		if isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd()) {
-			return fmt.Errorf("nothing on stdin")
+			return fmt.Errorf("Nothing on stdin")
 		}
 
 		fnames = []string{"-"}
 	} else {
 		for _, fname := range fnames {
 			if f, err := os.Open(fname); err != nil {
-				return err
+				return fmt.Errorf("Error opening file %s: %w", fname, err)
 			} else {
 				f.Close()
 			}
@@ -198,39 +217,39 @@ func copy(fnames []string) error {
 	}
 
 	debugLog.Println("Beginning osc52 copy operation")
-	err := func() error {
-		tty, err := opentty()
-		if err != nil {
-			errorLog.Println("opentty:", err)
+
+	tty, err := opentty()
+	if err != nil {
+		return fmt.Errorf("Error opening tty: %w", err)
+	}
+	defer closetty(tty)
+
+	// Open buffered output, using default max OSC52 length as buffer size
+	out := bufio.NewWriterSize(tty, 1000000)
+	defer out.Flush()
+
+	// Start OSC52
+	fmt.Fprint(out, oscOpen)
+	// End OSC52
+	defer fmt.Fprint(out, oscClose)
+
+	var b64 io.WriteCloser
+	if !isScreen {
+		b64 = base64.NewEncoder(base64.StdEncoding, out)
+	} else {
+		b64 = base64.NewEncoder(base64.StdEncoding, &chunkingWriter{writer: out})
+	}
+	defer b64.Close()
+
+	for _, fname := range fnames {
+		if err := encode(fname, b64); err != nil {
 			return err
 		}
-		defer closetty(tty)
+	}
 
-		// Open buffered output, using default max OSC52 length as buffer size
-		out := bufio.NewWriterSize(tty, 1000000)
+	defer debugLog.Println("Ended osc52")
 
-		// Start OSC52
-		fmt.Fprint(out, oscOpen)
-
-		var b64 io.WriteCloser
-		if !isScreen {
-			b64 = base64.NewEncoder(base64.StdEncoding, out)
-		} else {
-			b64 = base64.NewEncoder(base64.StdEncoding, &chunkingWriter{writer: out})
-		}
-		for _, fname := range fnames {
-			encode(fname, b64)
-		}
-		b64.Close()
-
-		// End OSC52
-		fmt.Fprint(out, oscClose)
-
-		out.Flush()
-		return nil
-	}()
-	debugLog.Println("Ended osc52")
-	return err
+	return nil
 }
 
 func tmux_paste() error {
@@ -389,9 +408,18 @@ osc copy [file1 [...fileN]]
 
 With no arguments, will read from stdin.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		logfile := initLogging()
-		defer closeSilently(logfile)
-		identifyTerm()
+		if logfile, err := initLogging(); err != nil {
+			fmt.Println(err)
+			returnCode = 1
+			return nil
+		} else {
+			defer closeSilently(logfile)
+		}
+		if err := identifyTerm(); err != nil {
+			fmt.Println(err)
+			returnCode = 1
+			return nil
+		}
 		return copy(args)
 	},
 }
@@ -404,9 +432,18 @@ var pasteCmd = &cobra.Command{
 osc paste`,
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		logfile := initLogging()
-		defer closeSilently(logfile)
-		identifyTerm()
+		if logfile, err := initLogging(); err != nil {
+			fmt.Println(err)
+			returnCode = 1
+			return nil
+		} else {
+			defer closeSilently(logfile)
+		}
+		if err := identifyTerm(); err != nil {
+			fmt.Println(err)
+			returnCode = 1
+			return nil
+		}
 		return paste()
 	},
 }
@@ -456,7 +493,8 @@ func init() {
 
 func main() {
 	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
+	if err != nil && returnCode == 0 {
+		returnCode = 1
 	}
+	os.Exit(returnCode)
 }
