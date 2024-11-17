@@ -42,18 +42,6 @@ var (
 	timeoutFlag float64
 	debugLog    *log.Logger
 	errorLog    *log.Logger
-
-	// error exit paths:
-	// option 1:
-	//   print message, no timestamp
-	//   exit non-zero
-	//   => set returnCode, do not return err from rootCmd.Execute()
-	// option 2:
-	//   print message, no timestamp
-	//   print usage
-	//   exit non-zero
-	//   => return err from rootCmd.Execute()
-	returnCode int = 0
 )
 
 func encode(fname string, encoder io.WriteCloser) error {
@@ -64,14 +52,14 @@ func encode(fname string, encoder io.WriteCloser) error {
 		f = os.Stdin
 	} else {
 		if f, err = os.Open(fname); err != nil {
-			return fmt.Errorf("Failed to open file %v: %v", fname, err)
+			return fmt.Errorf("Failed to open file %s: %w", fname, err)
 		} else {
 			defer f.Close()
 		}
 	}
 
 	if _, err = io.Copy(encoder, f); err != nil {
-		return fmt.Errorf("Failed to copy file %v: %v", fname, err)
+		return fmt.Errorf("Failed to copy file %s: %w", fname, err)
 	}
 
 	return nil
@@ -407,20 +395,28 @@ var copyCmd = &cobra.Command{
 osc copy [file1 [...fileN]]
 
 With no arguments, will read from stdin.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if logfile, err := initLogging(); err != nil {
-			fmt.Println(err)
-			returnCode = 1
-			return nil
-		} else {
-			defer closeSilently(logfile)
-		}
-		if err := identifyTerm(); err != nil {
-			fmt.Println(err)
-			returnCode = 1
-			return nil
-		}
-		return copy(args)
+	Run: func(cmd *cobra.Command, args []string) {
+		rc := func() int {
+			if logfile, err := initLogging(); err != nil {
+				errorLog.Println(err)
+				fmt.Println(err)
+				return 1
+			} else {
+				defer closeSilently(logfile)
+			}
+			if err := identifyTerm(); err != nil {
+				errorLog.Println(err)
+				fmt.Println(err)
+				return 1
+			}
+			if err := copy(args); err != nil {
+				errorLog.Println(err)
+				fmt.Println(err)
+				return 1
+			}
+			return 0
+		}()
+		os.Exit(rc)
 	},
 }
 
@@ -431,20 +427,28 @@ var pasteCmd = &cobra.Command{
 
 osc paste`,
 	Args: cobra.NoArgs,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if logfile, err := initLogging(); err != nil {
-			fmt.Println(err)
-			returnCode = 1
-			return nil
-		} else {
-			defer closeSilently(logfile)
-		}
-		if err := identifyTerm(); err != nil {
-			fmt.Println(err)
-			returnCode = 1
-			return nil
-		}
-		return paste()
+	Run: func(cmd *cobra.Command, args []string) {
+		rc := func() int {
+			if logfile, err := initLogging(); err != nil {
+				errorLog.Println(err)
+				fmt.Println(err)
+				return 1
+			} else {
+				defer closeSilently(logfile)
+			}
+			if err := identifyTerm(); err != nil {
+				errorLog.Println(err)
+				fmt.Println(err)
+				return 1
+			}
+			if err := paste(); err != nil {
+				errorLog.Println(err)
+				fmt.Println(err)
+				return 1
+			}
+			return 0
+		}()
+		os.Exit(rc)
 	},
 }
 
@@ -493,8 +497,7 @@ func init() {
 
 func main() {
 	err := rootCmd.Execute()
-	if err != nil && returnCode == 0 {
-		returnCode = 1
+	if err != nil {
+		os.Exit(1)
 	}
-	os.Exit(returnCode)
 }
