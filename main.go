@@ -235,7 +235,7 @@ func copy(fnames []string) error {
 
 func tmux_paste() error {
 	if out, err := exec.Command("tmux", "show", "-v", "set-clipboard").Output(); err != nil {
-		return fmt.Errorf("error running 'tmux show -v set-clipboard': %w", err)
+		return fmt.Errorf("Error running 'tmux show -v set-clipboard': %w", err)
 	} else {
 		outStr := strings.TrimSpace(string(out))
 		debugLog.Println("'tmux show -v set-clipboard':", outStr)
@@ -245,7 +245,7 @@ func tmux_paste() error {
 	}
 	// refresh client list
 	if out, err := exec.Command("tmux", "refresh-client", "-l").Output(); err != nil {
-		return fmt.Errorf("error running 'tmux refresh-client -l': %v", err)
+		return fmt.Errorf("Error running 'tmux refresh-client -l': %v", err)
 	} else {
 		debugLog.Println("tmux refresh-client output:", string(out))
 	}
@@ -305,58 +305,68 @@ func paste() error {
 	timeout := time.Duration(timeoutFlag*1_000_000_000) * time.Nanosecond
 	debugLog.Println("Beginning osc52 paste operation, timeout:", timeout)
 
-	tty, err := opentty()
-	if err != nil {
-		errorLog.Println("opentty:", err)
-		return err
-	}
-	defer closetty(tty)
+	if data, err := func() ([]byte, error) {
+		tty, err := opentty()
+		if err != nil {
+			return nil, fmt.Errorf("Error opening tty: %w", err)
+		}
+		defer closetty(tty)
 
-	// Start OSC52
-	fmt.Fprint(tty, oscOpen+"?"+oscClose)
+		// Start OSC52
+		fmt.Fprint(tty, oscOpen+"?"+oscClose)
 
-	var ttyReader *bufio.Reader
-	if verboseFlag {
-		ttyReader = bufio.NewReader(&debugReader{
-			prefix: "tty read",
-			r:      tty,
-		})
-	} else {
-		ttyReader = bufio.NewReader(tty)
-	}
-
-	// time out intial read
-	readChan := make(chan []byte, 1)
-	defer close(readChan)
-	go func() {
-		if b, e := ttyReader.ReadSlice(';'); e != nil {
-			errorLog.Println("Initial ReadSlice error:", e)
+		var ttyReader *bufio.Reader
+		if verboseFlag {
+			ttyReader = bufio.NewReader(&debugReader{
+				prefix: "tty read",
+				r:      tty,
+			})
 		} else {
-			readChan <- b
+			ttyReader = bufio.NewReader(tty)
 		}
-	}()
-	select {
-	case b := <-readChan:
-		if !bytes.Equal(b, []byte(OSC)) {
-			errorLog.Printf("osc header mismatch: %q", b)
-			return fmt.Errorf("osc header mismatch: %q", b)
+
+		// Define a struct to hold the read bytes and any error
+		type readResult struct {
+			data []byte
+			err  error
 		}
-	case <-time.After(timeout):
-		debugLog.Println("tty read timeout")
-		return fmt.Errorf("tty read timeout")
-	}
 
-	// ignore clipboard info
-	if _, e := ttyReader.ReadSlice(';'); e != nil {
-		errorLog.Println("clipboard metadata ReadSlice:", e)
-		return fmt.Errorf("clipboard metadata ReadSlice: %w", e)
-	}
+		// Time out initial read
+		readChan := make(chan readResult, 1)
+		defer close(readChan)
 
-	pr := pasteReader{r: ttyReader}
-	decoder := base64.NewDecoder(base64.StdEncoding, &pr)
-	if _, err = io.Copy(os.Stdout, decoder); err != nil {
-		errorLog.Println("Error copying to stdout:", err)
-		return fmt.Errorf("Error copying to stdout: %w", err)
+		go func() {
+			b, e := ttyReader.ReadSlice(';')
+			readChan <- readResult{data: b, err: e}
+		}()
+
+		select {
+		case res := <-readChan:
+			if res.err != nil {
+				return nil, fmt.Errorf("Initial ReadSlice error: %w", res.err)
+			} else if !bytes.Equal(res.data, []byte(OSC)) {
+				return nil, fmt.Errorf("osc header mismatch: %q", res.data)
+			}
+		case <-time.After(timeout):
+			return nil, fmt.Errorf("tty read timeout")
+		}
+
+		// ignore clipboard info
+		if _, e := ttyReader.ReadSlice(';'); e != nil {
+			return nil, fmt.Errorf("Clipboard metadata ReadSlice error: %w", e)
+		}
+
+		pr := pasteReader{r: ttyReader}
+		decoder := base64.NewDecoder(base64.StdEncoding, &pr)
+		if data, err := io.ReadAll(decoder); err != nil {
+			return nil, fmt.Errorf("Error reading from decoder: %w", err)
+		} else {
+			return data, nil
+		}
+	}(); err != nil {
+		return err
+	} else if _, err := os.Stdout.Write(data); err != nil {
+		return fmt.Errorf("Error writing to stdout: %w", err)
 	}
 
 	debugLog.Println("Ended osc52")
