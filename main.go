@@ -188,20 +188,32 @@ func copy(fnames []string) error {
 			}
 		}
 	}
+
+	var data []byte
 	if len(fnames) == 0 {
 		if isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd()) {
 			return fmt.Errorf("Nothing on stdin")
 		}
 
-		fnames = []string{"-"}
+		var err error
+		if data, err = io.ReadAll(os.Stdin); err != nil {
+			return fmt.Errorf("Error reading stdin: %w", err)
+		}
 	} else {
+		var dataBuff bytes.Buffer
+
 		for _, fname := range fnames {
 			if f, err := os.Open(fname); err != nil {
 				return fmt.Errorf("Error opening file %s: %w", fname, err)
+			} else if n, err := io.Copy(&dataBuff, f); err != nil {
+				return fmt.Errorf("Error reading file %s: %w", fname, err)
+			} else if err := f.Close(); err != nil {
+				return fmt.Errorf("Error closing file %s: %w", fname, err)
 			} else {
-				f.Close()
+				debugLog.Printf("Read %d bytes from %s", n, fname)
 			}
 		}
+		data = dataBuff.Bytes()
 	}
 
 	debugLog.Println("Beginning osc52 copy operation")
@@ -212,14 +224,13 @@ func copy(fnames []string) error {
 	}
 	defer closetty(tty)
 
-	// Open buffered output, using default max OSC52 length as buffer size
-	out := bufio.NewWriterSize(tty, 1000000)
-	defer out.Flush()
+	// Open buffered output
+	out := bufio.NewWriter(tty)
 
 	// Start OSC52
-	fmt.Fprint(out, oscOpen)
-	// End OSC52
-	defer fmt.Fprint(out, oscClose)
+	if _, err := fmt.Fprint(out, oscOpen); err != nil {
+		return fmt.Errorf("Error writing osc open: %w", err)
+	}
 
 	var b64 io.WriteCloser
 	if !isScreen {
@@ -227,15 +238,23 @@ func copy(fnames []string) error {
 	} else {
 		b64 = base64.NewEncoder(base64.StdEncoding, &chunkingWriter{writer: out})
 	}
-	defer b64.Close()
 
-	for _, fname := range fnames {
-		if err := encode(fname, b64); err != nil {
-			return err
-		}
+	if _, err := b64.Write(data); err != nil {
+		return fmt.Errorf("Error writing data: %w", err)
 	}
 
-	defer debugLog.Println("Ended osc52")
+	if err := b64.Close(); err != nil {
+		return fmt.Errorf("Error closing encoder: %w", err)
+	}
+
+	// End OSC52
+	if _, err := fmt.Fprint(out, oscClose); err != nil {
+		return fmt.Errorf("Error writing osc close: %w", err)
+	}
+
+	if err := out.Flush(); err != nil {
+		return fmt.Errorf("Error flushing bufio: %w", err)
+	}
 
 	return nil
 }
