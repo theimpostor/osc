@@ -44,27 +44,6 @@ var (
 	errorLog    *log.Logger
 )
 
-func encode(fname string, encoder io.WriteCloser) error {
-	var f *os.File
-	var err error
-
-	if fname == "-" {
-		f = os.Stdin
-	} else {
-		if f, err = os.Open(fname); err != nil {
-			return fmt.Errorf("Failed to open file %s: %w", fname, err)
-		} else {
-			defer f.Close()
-		}
-	}
-
-	if _, err = io.Copy(encoder, f); err != nil {
-		return fmt.Errorf("Failed to copy file %s: %w", fname, err)
-	}
-
-	return nil
-}
-
 func closetty(tty tcell.Tty) {
 	_ = tty.Drain()
 	_ = tty.Stop()
