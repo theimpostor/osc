@@ -44,6 +44,28 @@ var (
 	errorLog    *log.Logger
 )
 
+type debugWriter struct {
+	prefix string
+	w      io.Writer
+}
+
+func (dw *debugWriter) Write(p []byte) (int, error) {
+	n, err := dw.w.Write(p)
+	debugLog.Printf("%s: %v %v %q", dw.prefix, n, err, p[:n])
+	return n, err
+}
+
+type debugReader struct {
+	prefix string
+	r      io.Reader
+}
+
+func (dr *debugReader) Read(p []byte) (int, error) {
+	n, err := dr.r.Read(p)
+	debugLog.Printf("%s: %v %v %q", dr.prefix, n, err, p[:n])
+	return n, err
+}
+
 func closetty(tty tcell.Tty) {
 	_ = tty.Drain()
 	_ = tty.Stop()
@@ -177,6 +199,8 @@ func copy(fnames []string) error {
 		var err error
 		if data, err = io.ReadAll(os.Stdin); err != nil {
 			return fmt.Errorf("Error reading stdin: %w", err)
+		} else {
+			debugLog.Printf("Read %d bytes from stdin", len(data))
 		}
 	} else {
 		var dataBuff bytes.Buffer
@@ -204,18 +228,26 @@ func copy(fnames []string) error {
 	defer closetty(tty)
 
 	// Open buffered output
-	out := bufio.NewWriter(tty)
+	var ttyWriter *bufio.Writer
+	if verboseFlag {
+		ttyWriter = bufio.NewWriter(&debugWriter{
+			prefix: "tty write",
+			w:      tty,
+		})
+	} else {
+		ttyWriter = bufio.NewWriter(tty)
+	}
 
 	// Start OSC52
-	if _, err := fmt.Fprint(out, oscOpen); err != nil {
+	if _, err := fmt.Fprint(ttyWriter, oscOpen); err != nil {
 		return fmt.Errorf("Error writing osc open: %w", err)
 	}
 
 	var b64 io.WriteCloser
 	if !isScreen {
-		b64 = base64.NewEncoder(base64.StdEncoding, out)
+		b64 = base64.NewEncoder(base64.StdEncoding, ttyWriter)
 	} else {
-		b64 = base64.NewEncoder(base64.StdEncoding, &chunkingWriter{writer: out})
+		b64 = base64.NewEncoder(base64.StdEncoding, &chunkingWriter{writer: ttyWriter})
 	}
 
 	if _, err := b64.Write(data); err != nil {
@@ -227,11 +259,11 @@ func copy(fnames []string) error {
 	}
 
 	// End OSC52
-	if _, err := fmt.Fprint(out, oscClose); err != nil {
+	if _, err := fmt.Fprint(ttyWriter, oscClose); err != nil {
 		return fmt.Errorf("Error writing osc close: %w", err)
 	}
 
-	if err := out.Flush(); err != nil {
+	if err := ttyWriter.Flush(); err != nil {
 		return fmt.Errorf("Error flushing bufio: %w", err)
 	}
 
@@ -287,17 +319,6 @@ func (pr *pasteReader) Read(p []byte) (int, error) {
 		}
 		return i, io.EOF
 	}
-	return n, err
-}
-
-type debugReader struct {
-	prefix string
-	r      io.Reader
-}
-
-func (dr *debugReader) Read(p []byte) (int, error) {
-	n, err := dr.r.Read(p)
-	debugLog.Printf("%s: %v %v %q", dr.prefix, n, err, p[:n])
 	return n, err
 }
 
