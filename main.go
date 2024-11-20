@@ -338,8 +338,20 @@ func paste() error {
 		}
 		defer closetty(tty)
 
+		var ttyWriter io.Writer
+		if verboseFlag {
+			ttyWriter = &debugWriter{
+				prefix: "tty write",
+				w:      tty,
+			}
+		} else {
+			ttyWriter = tty
+		}
+
 		// Start OSC52
-		fmt.Fprint(tty, oscOpen+"?"+oscClose)
+		if _, err := fmt.Fprint(ttyWriter, oscOpen+"?"+oscClose); err != nil {
+			return nil, fmt.Errorf("Error writing osc open: %w", err)
+		}
 
 		var ttyReader *bufio.Reader
 		if verboseFlag {
