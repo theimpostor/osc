@@ -371,11 +371,11 @@ func paste() error {
 
 		// Time out initial read
 		readChan := make(chan readResult, 1)
-		defer close(readChan)
 
 		go func() {
 			b, e := ttyReader.ReadSlice(';')
 			readChan <- readResult{data: b, err: e}
+			close(readChan)
 		}()
 
 		select {
