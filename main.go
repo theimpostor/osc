@@ -32,7 +32,7 @@ const (
 
 var (
 	oscOpen     string = OSC + "c;"
-	oscClose    string = string(BEL)
+	oscClose    string = string(ESC) + string(BS)
 	isScreen    bool
 	isTmux      bool
 	isZellij    bool
