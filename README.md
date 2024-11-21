@@ -7,21 +7,21 @@ System clipboard access includes writing (i.e. copy) and reading (i.e. paste), e
 
 #### Copying to the clipboard
 
-```
+```bash
 ❯ echo -n asdf | osc copy
 # String 'asdf' copied to clipboard
 ```
 
 #### Pasting from the clipboard
 
-```
+```bash
 ❯ osc paste
 asdf
 ```
 
 #### Clearing the clipboard
 
-```
+```bash
 ❯ osc copy  /dev/null
 # Clipboard cleared
 ```
@@ -83,7 +83,19 @@ Terminal Multiplexer | Copy | Paste | Notes
 
 ## Installation
 
+### Installing a Binary
+
+[Download the latest binary](https://github.com/theimpostor/osc/releases) from GitHub.
+
+osc is a stand-alone binary. Once downloaded, copy it to a location you can run executables from (ie: `/usr/local/bin/`), and set the permissions accordingly:
+
+```bash
+chmod a+x /usr/local/bin/osc
 ```
+
+### Installing from Source
+
+```bash
 go install -v github.com/theimpostor/osc@latest
 ```
 
