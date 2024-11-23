@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -22,26 +23,28 @@ import (
 )
 
 const (
-	ESC       = '\x1b'
-	BEL       = '\a'
-	BS        = '\\'
-	OSC       = string(ESC) + "]52;"
-	DCS_OPEN  = string(ESC) + "P"
-	DCS_CLOSE = string(ESC) + string(BS)
+	ESC             = '\x1b'
+	BEL             = '\a'
+	BS              = '\\'
+	OSC             = string(ESC) + "]52;"
+	DCS_OPEN        = string(ESC) + "P"
+	DCS_CLOSE       = string(ESC) + string(BS)
+	CLIPBOARD_REGEX = `^[cpqs0-7]*$`
 )
 
 var (
-	oscOpen     string = OSC + "c;"
-	oscClose    string = string(ESC) + string(BS)
-	isScreen    bool
-	isTmux      bool
-	isZellij    bool
-	verboseFlag bool
-	logfileFlag string
-	deviceFlag  string
-	timeoutFlag float64
-	debugLog    *log.Logger
-	errorLog    *log.Logger
+	oscOpen       string
+	oscClose      string
+	isScreen      bool
+	isTmux        bool
+	isZellij      bool
+	verboseFlag   bool
+	logfileFlag   string
+	deviceFlag    string
+	clipboardFlag string
+	timeoutFlag   float64
+	debugLog      *log.Logger
+	errorLog      *log.Logger
 )
 
 type debugWriter struct {
@@ -129,6 +132,9 @@ func identifyTerm() error {
 			isScreen = true
 		}
 	}
+
+	oscOpen = OSC + clipboardFlag + ";"
+	oscClose = string(ESC) + string(BS)
 
 	if isScreen {
 		debugLog.Println("Setting screen dcs passthrough")
@@ -426,7 +432,12 @@ var copyCmd = &cobra.Command{
 osc copy [file1 [...fileN]]
 
 With no arguments, will read from stdin.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if matched, err := regexp.MatchString(CLIPBOARD_REGEX, clipboardFlag); err != nil {
+			return fmt.Errorf("Invalid clipboard flag: %w", err)
+		} else if !matched {
+			return fmt.Errorf("Invalid clipboard flag: %s", clipboardFlag)
+		}
 		rc := func() int {
 			if logfile, err := initLogging(); err != nil {
 				errorLog.Println(err)
@@ -448,6 +459,7 @@ With no arguments, will read from stdin.`,
 			return 0
 		}()
 		os.Exit(rc)
+		return nil
 	},
 }
 
@@ -458,7 +470,12 @@ var pasteCmd = &cobra.Command{
 
 osc paste`,
 	Args: cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if matched, err := regexp.MatchString(CLIPBOARD_REGEX, clipboardFlag); err != nil {
+			return fmt.Errorf("Invalid clipboard flag: %w", err)
+		} else if !matched {
+			return fmt.Errorf("Invalid clipboard flag: %s", clipboardFlag)
+		}
 		rc := func() int {
 			if logfile, err := initLogging(); err != nil {
 				errorLog.Println(err)
@@ -480,6 +497,7 @@ osc paste`,
 			return 0
 		}()
 		os.Exit(rc)
+		return nil
 	},
 }
 
@@ -520,6 +538,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&logfileFlag, "log", "l", "", "write logs to file")
 	rootCmd.PersistentFlags().StringVarP(&deviceFlag, "device", "d", "", "use specific tty device")
 	rootCmd.PersistentFlags().Float64VarP(&timeoutFlag, "timeout", "t", 5, "tty read timeout in seconds")
+	rootCmd.PersistentFlags().StringVarP(&clipboardFlag, "clipboard", "c", "c", "target clipboard, can be empty or one or more of c, p, q, s, or 0-7")
 
 	rootCmd.AddCommand(copyCmd)
 	rootCmd.AddCommand(pasteCmd)

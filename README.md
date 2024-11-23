@@ -42,11 +42,12 @@ Available Commands:
   version     Outputs version information
 
 Flags:
-  -d, --device string   select device (default "/dev/tty")
-  -h, --help            help for osc
-  -l, --log string      write logs to file
-  -t, --timeout float   tty read timeout in seconds (default 5)
-  -v, --verbose         verbose logging
+  -c, --clipboard string   target clipboard, can be empty or one or more of c, p, q, s, or 0-7 (default "c")
+  -d, --device string      use specific tty device
+  -h, --help               help for osc
+  -l, --log string         write logs to file
+  -t, --timeout float      tty read timeout in seconds (default 5)
+  -v, --verbose            verbose logging
 
 Use "osc [command] --help" for more information about a command.
 ```
