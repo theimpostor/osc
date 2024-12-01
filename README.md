@@ -67,7 +67,7 @@ Terminal | Terminal OS | Shell OS | Copy | Paste | Notes
 [windows terminal](https://github.com/microsoft/terminal) v1.17.11461.0 | Windows | Windows | &check; | &cross; |
 [windows terminal](https://github.com/microsoft/terminal) v1.17.11461.0 | Windows | linux | &check; | &cross; |
 [mintty](https://mintty.github.io/) 3.7.6 | Windows | Windows | &check; | &cross; | Paste support: https://github.com/theimpostor/osc/issues/13
-[mintty](https://mintty.github.io/) 3.7.6 | Windows | linux | &check; | &cross; |
+[mintty](https://mintty.github.io/) 3.7.6 | Windows | linux | &check; | &check; | [Configure](https://mintty.github.io/mintty.1.html) `AllowSetSelection`, `AllowPasteSelection` to `true` for copy and paste respectively. [Must login with cygwin openssh](https://github.com/mintty/mintty/issues/1301#issuecomment-2509564173)
 [iterm2](https://iterm2.com/) | macOS | linux | &check; | &check; | Paste requires version 3.5.0. Prompts for access.
 [iterm2](https://iterm2.com/) | macOS | macOS | &check; | &check; | Paste requires version 3.5.0. Prompts for access.
 [hterm](https://chrome.google.com/webstore/detail/secure-shell/iodihamcpbpeioajjeobimgagajmlibd) | ChromeOS | linux | &check; | &cross; |
