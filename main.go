@@ -185,11 +185,11 @@ func (w *chunkingWriter) Write(p []byte) (n int, err error) {
 func copy(fnames []string) error {
 	// copy
 	if isTmux {
-		if out, err := exec.Command("tmux", "show", "-v", "allow-passthrough").Output(); err != nil {
-			return fmt.Errorf("Error running 'tmux show -v allow-passthrough': %w", err)
+		if out, err := exec.Command("tmux", "show", "-gwsv", "allow-passthrough").Output(); err != nil {
+			return fmt.Errorf("Error running 'tmux show -gwsv allow-passthrough': %w", err)
 		} else {
 			outStr := strings.TrimSpace(string(out))
-			debugLog.Println("'tmux show -v allow-passthrough':", outStr)
+			debugLog.Println("'tmux show -gwsv allow-passthrough':", outStr)
 			if outStr != "on" && outStr != "all" {
 				return fmt.Errorf("tmux allow-passthrough must be set to 'on' or 'all'")
 			}
