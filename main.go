@@ -72,7 +72,7 @@ func (dr *debugReader) Read(p []byte) (int, error) {
 func closetty(tty tcell.Tty) {
 	_ = tty.Drain()
 	_ = tty.Stop()
-	tty.Close()
+	_ = tty.Close()
 }
 
 // log levels to handle:
@@ -420,7 +420,7 @@ func paste() error {
 
 func closeSilently(f *os.File) {
 	if f != nil {
-		f.Close()
+		_ = f.Close()
 	}
 }
 
