@@ -56,31 +56,31 @@ Use "osc [command] --help" for more information about a command.
 
 OSC52 is overall [widely supported](https://github.com/ojroques/vim-oscyank/blob/main/README.md#vim-oscyank), but clipboard read operation is less widely supported than write.
 
-Terminal | Terminal OS | Shell OS | Copy | Paste | Notes
----      | ---         | ---      | ---  | ---   | ---
-[alacritty](https://github.com/alacritty/alacritty) 0.13.1 | macOS | linux | &check; | &check; | Paste support requires [setting](https://alacritty.org/config-alacritty.html) `terminal.osc52` to `CopyPaste` or `OnlyPaste`
-[alacritty](https://github.com/alacritty/alacritty) 0.13.1 | macOS | macOS | &check; | &check; | Paste support requires [setting](https://alacritty.org/config-alacritty.html) `terminal.osc52` to `CopyPaste` or `OnlyPaste`
-[alacritty](https://github.com/alacritty/alacritty) 0.13.2 | Windows | linux | &check; | &cross; |
-[alacritty](https://github.com/alacritty/alacritty) 0.13.2 | Windows | Windows | &check; | &cross; |
-[kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | linux | &check; | &check; | Prompts for access
-[kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | macOS | &check; | &check; | Prompts for access
-[windows terminal](https://github.com/microsoft/terminal) v1.17.11461.0 | Windows | Windows | &check; | &cross; |
-[windows terminal](https://github.com/microsoft/terminal) v1.17.11461.0 | Windows | linux | &check; | &cross; |
-[mintty](https://mintty.github.io/) 3.7.6 | Windows | Windows | &check; | &cross; | Paste support: https://github.com/theimpostor/osc/issues/13
-[mintty](https://mintty.github.io/) 3.7.6 | Windows | linux | &check; | &check; | [Configure](https://mintty.github.io/mintty.1.html) `AllowSetSelection`, `AllowPasteSelection` to `true` for copy and paste respectively.<br>[Must use cygwin openssh](https://github.com/mintty/mintty/issues/1301#issuecomment-2509564173), native ssh.exe for windows causes issues.
-[iterm2](https://iterm2.com/) | macOS | linux | &check; | &check; | Paste requires version 3.5.0. Prompts for access.
-[iterm2](https://iterm2.com/) | macOS | macOS | &check; | &check; | Paste requires version 3.5.0. Prompts for access.
-[hterm](https://chrome.google.com/webstore/detail/secure-shell/iodihamcpbpeioajjeobimgagajmlibd) | ChromeOS | linux | &check; | &cross; |
+| Terminal | Terminal OS | Shell OS | Copy | Paste | Notes |
+|----------|-------------|----------|------|-------|-------|
+| [alacritty](https://github.com/alacritty/alacritty) 0.13.1 | macOS | linux | &check; | &check; | Paste support requires [setting](https://alacritty.org/config-alacritty.html) `terminal.osc52` to `CopyPaste` or `OnlyPaste` |
+| [alacritty](https://github.com/alacritty/alacritty) 0.13.1 | macOS | macOS | &check; | &check; | Paste support requires [setting](https://alacritty.org/config-alacritty.html) `terminal.osc52` to `CopyPaste` or `OnlyPaste` |
+| [alacritty](https://github.com/alacritty/alacritty) 0.13.2 | Windows | linux | &check; | &cross; | |
+| [alacritty](https://github.com/alacritty/alacritty) 0.13.2 | Windows | Windows | &check; | &cross; | |
+| [kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | linux | &check; | &check; | Prompts for access |
+| [kitty](https://github.com/kovidgoyal/kitty) 0.29.0 | macOS | macOS | &check; | &check; | Prompts for access |
+| [windows terminal](https://github.com/microsoft/terminal) v1.17.11461.0 | Windows | Windows | &check; | &cross; | |
+| [windows terminal](https://github.com/microsoft/terminal) v1.17.11461.0 | Windows | linux | &check; | &cross; | |
+| [mintty](https://mintty.github.io/) 3.7.6 | Windows | Windows | &check; | &cross; | |
+| [mintty](https://mintty.github.io/) 3.7.6 | Windows | linux | &check; | &check; | [Configure](https://mintty.github.io/mintty.1.html) `AllowSetSelection`, `AllowPasteSelection` to `true` for copy and paste respectively.<br>[Must use cygwin openssh](https://github.com/mintty/mintty/issues/1301#issuecomment-2509564173), native ssh.exe for windows causes issues. |
+| [iterm2](https://iterm2.com/) | macOS | linux | &check; | &check; | Paste requires version 3.5.0. Prompts for access. |
+| [iterm2](https://iterm2.com/) | macOS | macOS | &check; | &check; | Paste requires version 3.5.0. Prompts for access. |
+| [hterm](https://chrome.google.com/webstore/detail/secure-shell/iodihamcpbpeioajjeobimgagajmlibd) | ChromeOS | linux | &check; | &cross; | |
 
 #### Terminal Multiplexer support
 
 Using [alacritty](https://github.com/alacritty/alacritty) as the terminal:
 
-Terminal Multiplexer | Copy | Paste | Notes
----                  | ---  | ---   | ---
-[screen](https://www.gnu.org/software/screen/) 4.09.00 | &check; | &check; |
-[zellij](https://zellij.dev/) 0.37.2 | &check; | &cross; | Paste not supported: https://github.com/zellij-org/zellij/issues/2647
-[tmux](https://github.com/tmux/tmux) 3.3 | &check; | &check; | [`allow-passthrough`](https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it) (for copy) and `set-clipboard` (for paste) should be enabled
+| Terminal Multiplexer | Copy | Paste | Notes |
+| ---------------------|------|-------|-------|
+| [screen](https://www.gnu.org/software/screen/) 4.09.00 | &check; | &check; |
+| [zellij](https://zellij.dev/) 0.37.2 | &check; | &cross; | Paste not supported: https://github.com/zellij-org/zellij/issues/2647 |
+| [tmux](https://github.com/tmux/tmux) 3.3 | &check; | &check; | [`allow-passthrough`](https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it) (for copy) and `set-clipboard` (for paste) should be enabled |
 
 ## Installation
 
