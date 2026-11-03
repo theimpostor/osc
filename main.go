@@ -95,7 +95,7 @@ func initLogging() (*os.File, error) {
 
 	if logfileFlag != "" {
 		if logOutput, err = os.OpenFile(logfileFlag, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0644); err != nil {
-			return nil, fmt.Errorf("Failed to open file %v: %v", logfileFlag, err)
+			return nil, fmt.Errorf("failed to open file %v: %v", logfileFlag, err)
 		} else {
 			logfile = logOutput
 		}
@@ -122,7 +122,7 @@ func identifyTerm() error {
 		isTmux = true
 	} else if ti, err := tcell.LookupTerminfo(os.Getenv("TERM")); err != nil {
 		if runtime.GOOS != "windows" {
-			return fmt.Errorf("Failed to lookup terminfo: %w", err)
+			return fmt.Errorf("failed to lookup terminfo: %w", err)
 		} else {
 			debugLog.Println("On Windows, failed to lookup terminfo:", err)
 		}
@@ -186,7 +186,7 @@ func copy(fnames []string) error {
 	// copy
 	if isTmux {
 		if out, err := exec.Command("tmux", "show", "-gwsv", "allow-passthrough").Output(); err != nil {
-			return fmt.Errorf("Error running 'tmux show -gwsv allow-passthrough': %w", err)
+			return fmt.Errorf("error running 'tmux show -gwsv allow-passthrough': %w", err)
 		} else {
 			outStr := strings.TrimSpace(string(out))
 			debugLog.Println("'tmux show -gwsv allow-passthrough':", outStr)
@@ -199,12 +199,12 @@ func copy(fnames []string) error {
 	var data []byte
 	if len(fnames) == 0 {
 		if isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd()) {
-			return fmt.Errorf("Nothing on stdin")
+			return fmt.Errorf("nothing on stdin")
 		}
 
 		var err error
 		if data, err = io.ReadAll(os.Stdin); err != nil {
-			return fmt.Errorf("Error reading stdin: %w", err)
+			return fmt.Errorf("error reading stdin: %w", err)
 		} else {
 			debugLog.Printf("Read %d bytes from stdin", len(data))
 		}
@@ -213,11 +213,11 @@ func copy(fnames []string) error {
 
 		for _, fname := range fnames {
 			if f, err := os.Open(fname); err != nil {
-				return fmt.Errorf("Error opening file %s: %w", fname, err)
+				return fmt.Errorf("error opening file %s: %w", fname, err)
 			} else if n, err := io.Copy(&dataBuff, f); err != nil {
-				return fmt.Errorf("Error reading file %s: %w", fname, err)
+				return fmt.Errorf("error reading file %s: %w", fname, err)
 			} else if err := f.Close(); err != nil {
-				return fmt.Errorf("Error closing file %s: %w", fname, err)
+				return fmt.Errorf("error closing file %s: %w", fname, err)
 			} else {
 				debugLog.Printf("Read %d bytes from %s", n, fname)
 			}
@@ -229,7 +229,7 @@ func copy(fnames []string) error {
 
 	tty, err := opentty()
 	if err != nil {
-		return fmt.Errorf("Error opening tty: %w", err)
+		return fmt.Errorf("error opening tty: %w", err)
 	}
 	defer closetty(tty)
 
@@ -246,7 +246,7 @@ func copy(fnames []string) error {
 
 	// Start OSC52
 	if _, err := fmt.Fprint(ttyWriter, oscOpen); err != nil {
-		return fmt.Errorf("Error writing osc open: %w", err)
+		return fmt.Errorf("error writing osc open: %w", err)
 	}
 
 	var b64 io.WriteCloser
@@ -257,20 +257,20 @@ func copy(fnames []string) error {
 	}
 
 	if _, err := b64.Write(data); err != nil {
-		return fmt.Errorf("Error writing data: %w", err)
+		return fmt.Errorf("error writing data: %w", err)
 	}
 
 	if err := b64.Close(); err != nil {
-		return fmt.Errorf("Error closing encoder: %w", err)
+		return fmt.Errorf("error closing encoder: %w", err)
 	}
 
 	// End OSC52
 	if _, err := fmt.Fprint(ttyWriter, oscClose); err != nil {
-		return fmt.Errorf("Error writing osc close: %w", err)
+		return fmt.Errorf("error writing osc close: %w", err)
 	}
 
 	if err := ttyWriter.Flush(); err != nil {
-		return fmt.Errorf("Error flushing bufio: %w", err)
+		return fmt.Errorf("error flushing bufio: %w", err)
 	}
 
 	return nil
@@ -278,7 +278,7 @@ func copy(fnames []string) error {
 
 func tmux_paste() error {
 	if out, err := exec.Command("tmux", "show", "-v", "set-clipboard").Output(); err != nil {
-		return fmt.Errorf("Error running 'tmux show -v set-clipboard': %w", err)
+		return fmt.Errorf("error running 'tmux show -v set-clipboard': %w", err)
 	} else {
 		outStr := strings.TrimSpace(string(out))
 		debugLog.Println("'tmux show -v set-clipboard':", outStr)
@@ -288,7 +288,7 @@ func tmux_paste() error {
 	}
 	// refresh client list
 	if out, err := exec.Command("tmux", "refresh-client", "-l").Output(); err != nil {
-		return fmt.Errorf("Error running 'tmux refresh-client -l': %v", err)
+		return fmt.Errorf("error running 'tmux refresh-client -l': %v", err)
 	} else {
 		debugLog.Println("tmux refresh-client output:", string(out))
 	}
@@ -340,7 +340,7 @@ func paste() error {
 	if data, err := func() ([]byte, error) {
 		tty, err := opentty()
 		if err != nil {
-			return nil, fmt.Errorf("Error opening tty: %w", err)
+			return nil, fmt.Errorf("error opening tty: %w", err)
 		}
 		defer closetty(tty)
 
@@ -356,7 +356,7 @@ func paste() error {
 
 		// Start OSC52
 		if _, err := fmt.Fprint(ttyWriter, oscOpen+"?"+oscClose); err != nil {
-			return nil, fmt.Errorf("Error writing osc open: %w", err)
+			return nil, fmt.Errorf("error writing osc open: %w", err)
 		}
 
 		var ttyReader *bufio.Reader
@@ -387,7 +387,7 @@ func paste() error {
 		select {
 		case res := <-readChan:
 			if res.err != nil {
-				return nil, fmt.Errorf("Initial ReadSlice error: %w", res.err)
+				return nil, fmt.Errorf("initial ReadSlice error: %w", res.err)
 			} else if !bytes.Equal(res.data, []byte(OSC)) {
 				return nil, fmt.Errorf("osc header mismatch: %q", res.data)
 			}
@@ -397,20 +397,20 @@ func paste() error {
 
 		// ignore clipboard info
 		if _, e := ttyReader.ReadSlice(';'); e != nil {
-			return nil, fmt.Errorf("Clipboard metadata ReadSlice error: %w", e)
+			return nil, fmt.Errorf("clipboard metadata ReadSlice error: %w", e)
 		}
 
 		pr := pasteReader{r: ttyReader}
 		decoder := base64.NewDecoder(base64.StdEncoding, &pr)
 		if data, err := io.ReadAll(decoder); err != nil {
-			return nil, fmt.Errorf("Error reading from decoder: %w", err)
+			return nil, fmt.Errorf("error reading from decoder: %w", err)
 		} else {
 			return data, nil
 		}
 	}(); err != nil {
 		return err
 	} else if _, err := os.Stdout.Write(data); err != nil {
-		return fmt.Errorf("Error writing to stdout: %w", err)
+		return fmt.Errorf("error writing to stdout: %w", err)
 	}
 
 	debugLog.Println("Ended osc52")
@@ -434,9 +434,9 @@ osc copy [file1 [...fileN]]
 With no arguments, will read from stdin.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if matched, err := regexp.MatchString(CLIPBOARD_REGEX, clipboardFlag); err != nil {
-			return fmt.Errorf("Invalid clipboard flag: %w", err)
+			return fmt.Errorf("invalid clipboard flag: %w", err)
 		} else if !matched {
-			return fmt.Errorf("Invalid clipboard flag: %s", clipboardFlag)
+			return fmt.Errorf("invalid clipboard flag: %s", clipboardFlag)
 		}
 		rc := func() int {
 			if logfile, err := initLogging(); err != nil {
@@ -472,9 +472,9 @@ osc paste`,
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if matched, err := regexp.MatchString(CLIPBOARD_REGEX, clipboardFlag); err != nil {
-			return fmt.Errorf("Invalid clipboard flag: %w", err)
+			return fmt.Errorf("invalid clipboard flag: %w", err)
 		} else if !matched {
-			return fmt.Errorf("Invalid clipboard flag: %s", clipboardFlag)
+			return fmt.Errorf("invalid clipboard flag: %s", clipboardFlag)
 		}
 		rc := func() int {
 			if logfile, err := initLogging(); err != nil {
